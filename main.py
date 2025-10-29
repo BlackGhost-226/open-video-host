@@ -1,12 +1,11 @@
 import json
 from flask import render_template, abort
 from jinja2.exceptions import TemplateNotFound
-from app import app, chromadb_client, SEARCH_COL_NAME
+from app import app
 import os
 import helper
 
 
-search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
 #from markupsafe import Markup
 
 
@@ -18,15 +17,7 @@ def home():
     return render_template('index.html')
 
 def search(query):
-    #html = f"""<div class="video">
-    #            <a href="{item.video_url}">
-    #                <img src="{item.img_url}" alt="cant load img">
-    #                <p>{jdata[item.id]["title"]}</p>
-    #                <p>{jdata[item.id]["date"]}</p>
-    #            </a>
-    #        </div>"""
-    results = search_col.query(query_texts=[query], n_results=6)["documents"][0]
-    return results
+    return render_template('search.html', q=query)
 
 def video(video_id):
     """Render the video player page"""

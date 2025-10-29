@@ -82,17 +82,12 @@ def stream_file(video_id, format_type, filename, key):
 def load_feed(offset):
     items = helper.video_list()
     
-    # Load the next 21 items
-    next_items = items[offset:offset+21]
-    
-    # Check if there are more items to load
-    has_more = offset + 21 < len(items)
+    return helper.load_template(offset=offset, item_html='home_items.html', items=items, offset_number=21)
 
-    jdata = {}
-    for item in next_items:
-        directory = os.path.join(app.config['OUTPUT_FOLDER'], item["id"], "data")
-        with open(directory+"/data.json", "r") as f:
-            data_json = json.load(f)
-            jdata[item["id"]] = data_json
-    
-    return render_template('items.html', items=next_items, offset=offset+21, has_more=has_more, jdata=jdata)
+def load_search_feed(offset, query):
+    items = []
+    results = search_col.query(query_texts=[query], n_results=6)["documents"][0]
+    for result in results:
+        items.append(helper.generate_video_json(result))
+
+    return helper.load_template(offset=offset, item_html='search_items.html', items=items, offset_number=4, q=query)

@@ -24,13 +24,11 @@
             <a href="/upload">Upload</a>
         </div>
         <div class="main">
-            {{ | }}
-
             <div id="content"
-                hx-get="/api/load-feed"
+                hx-get="/api/load-search?q={{ q }}"
                 hx-trigger="revealed"
                 hx-swap="afterend">
-            {% include 'items.html' %}
+                {% include 'search_items.html' %}
             </div>
         </div>
     </body>

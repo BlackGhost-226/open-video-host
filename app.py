@@ -77,6 +77,12 @@ def load_feed():
     offset = int(request.args.get('offset', 0))
     return api.load_feed(offset)
 
+@app.route('/api/load-search')
+def load_search_feed():
+    offset = int(request.args.get('offset', 0))
+    query = request.args.get('q')
+    return api.load_search_feed(offset, query)
+
 
 
 import helper

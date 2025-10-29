@@ -1,0 +1,24 @@
+{% for group in items|batch(3, fill_with=None) %}
+    <div class="video3">
+        {% for item in group %}
+            {% if item is not none %}
+                <div class="video">
+                    <a href="{{ item.video_url }}">
+                        <img src="{{ item.img_url }}" alt="cant load img">
+                        <p>{{ jdata[item.id]["title"] }}</p>
+                        <p>{{ jdata[item.id]["date"] }}</p>
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endfor %}
+
+{% if has_more %}
+    <div hx-get="/api/load-search?offset={{ offset }}?q={{ q }}"
+         hx-trigger="revealed"
+         hx-swap="outerHTML"
+         class="loading-indicator">
+        Loading more...
+    </div>
+{% endif %}
