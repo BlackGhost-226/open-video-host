@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <title>video-open-host</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='forms.css') }}">
+    </head>
+
+    <body>
+        <div class="topbar">
+            <form action="/search" method="get">
+                <input type="text" name="q" placeholder="Search...">
+                <input type="submit" value="Search">
+            </form>
+        </div>
+        <div class="sidebar">
+            <a href="/">Home</a>
+            <a href="/history">History</a>
+            <a href="/upload" class="active">Upload</a>
+        </div>
+        <div class="main">
+            <h1>Upload Form</h1>
+            <form calss="upload" id="upload-form" onsubmit="event.preventDefault(); uploadFile();">
+                <input type="file" id="file-input" name="video" required>
+                <input type="file" id="img-input" name="img">
+                <input type="text" id="text-input" name="name" required>
+                <button type="submit">Upload video</button>
+            </form>
+
+            <script src="{{ url_for('static', filename='upload-video.js') }}"></script>
+        </div>
+    </body>
+</html>
