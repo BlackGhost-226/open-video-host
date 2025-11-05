@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, send_from_directory, render_template
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import chromadb
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 
 chromadb_client = chromadb.PersistentClient(path=r"./vector-db")
@@ -11,7 +12,7 @@ SEARCH_COL_NAME = "search"
 try:
     collection = chromadb_client.create_collection(
         name=SEARCH_COL_NAME,
-        #embedding_function=None
+        embedding_function=DefaultEmbeddingFunction()
     )
 except:
     pass
@@ -86,13 +87,21 @@ def load_search_feed():
 
 
 import helper
+search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
 @app.route('/debug/video-list')
 def video_list():
     return jsonify(helper.video_list())
 
 @app.route('/debug/vector-list')
 def vector_list():
-    return jsonify(helper.vector_list())
+    get = search_col.get()
+    return jsonify(get)
+
+@app.route('/debug/vector-get')
+def get_v_db():
+    query = request.args.get('q')
+    results = search_col.query(query_texts=[query], n_results=4)
+    return results
 
 if __name__ == '__main__':
     app.run(debug = True)

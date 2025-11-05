@@ -6,7 +6,7 @@ div.video a {
     margin: 15px 12px;
 }
 
-div.video img {
+div img {
     width: 100%;
     max-width: 500px;
     height: auto;
@@ -15,4 +15,12 @@ div.video img {
 
 div.video p {
     margin: 15px 30px;
+}
+
+div.video-s * {
+    display: flex;
+}
+
+div.video-s p {
+    margin: 15px;
 }

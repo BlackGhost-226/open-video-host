@@ -43,13 +43,14 @@ def upload_file():
             img_path = helper.secure_save(img, video_upload_dir)
 
         data = {
-            "title": text
+            "title": text,
+            "date": None
         }
 
         # video to search db
         search_col.add(
-            ids=[text],
-            documents=[video_id]
+            ids=[video_id],
+            documents=[text]
         )
         
         if has_img:
@@ -86,7 +87,7 @@ def load_feed(offset):
 
 def load_search_feed(offset, query):
     items = []
-    results = search_col.query(query_texts=[query], n_results=6)["documents"][0]
+    results = search_col.query(query_texts=[query], n_results=4)["ids"][0]
     for result in results:
         items.append(helper.generate_video_json(result))
 

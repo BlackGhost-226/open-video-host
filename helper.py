@@ -26,10 +26,6 @@ def video_list():
                 videos.append(generate_video_json(video_id))
     return videos
 
-def vector_list():
-    get = search_col.get()
-    return get
-
 def secure_save(file: str, upload_dir: str):
     filename = secure_filename(file.filename)
     file_path = os.path.join(upload_dir, filename)
