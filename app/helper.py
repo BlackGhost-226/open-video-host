@@ -49,7 +49,7 @@ def generate_video_json(video_id):
             "data_url": f'/api/stream/{video_id}/data/data.json'
             }
 
-def load_template(offset, items, offset_number, item_html, **kwargs):
+def load_item_template(offset, items, offset_number, item_html, **kwargs):
     # Load the next 21 items
     next_items = items[offset:offset+offset_number]
     

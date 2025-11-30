@@ -2,23 +2,23 @@ import json
 import threading
 from app import app, logger, ALLOWED_VIDEO_EXTENSIONS, ALLOWED_IMG_EXTENSIONS, chromadb_client, SEARCH_COL_NAME
 from flask import request, jsonify, send_from_directory, render_template
-import helper
+import app.helper as helper
 import uuid
 import os
-from process_video import process_video
+from app.process_video import process_video
 
 
 search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
 
-def upload_file():
-    video = request.files.get('video')
-    img = request.files.get('img')
-    text = request.form.get('text')
+def upload_file(video, img, text):
+    #video = request.files.get('video')
+    #img = request.files.get('img')
+    #text = request.form.get('text')
 
     #if text sql enj:
 
     has_img = bool
-    if img is None:
+    if not img:
         has_img = False
     else:
         if img and helper.allowed_file(img.filename, ALLOWED_IMG_EXTENSIONS):
@@ -68,7 +68,7 @@ def upload_file():
 
 def stream_file(video_id, format_type, filename, key):
     """Serve the video stream files"""
-    directory = os.path.join(app.config['OUTPUT_FOLDER'], video_id, format_type)
+    directory = os.path.join("../", app.config['OUTPUT_FOLDER'], video_id, format_type)
     response =  send_from_directory(directory, filename)
 
     if response.mimetype == "application/json":
@@ -83,7 +83,7 @@ def stream_file(video_id, format_type, filename, key):
 def load_feed(offset):
     items = helper.video_list()
     
-    return helper.load_template(offset=offset, item_html='home_items.html', items=items, offset_number=21)
+    return helper.load_item_template(offset=offset, item_html='home_items.html', items=items, offset_number=21)
 
 def load_search_feed(offset, query):
     items = []
@@ -91,4 +91,4 @@ def load_search_feed(offset, query):
     for result in results:
         items.append(helper.generate_video_json(result))
 
-    return helper.load_template(offset=offset, item_html='search_items.html', items=items, offset_number=4, q=query)
+    return helper.load_item_template(offset=offset, item_html='search_items.html', items=items, offset_number=4, q=query)

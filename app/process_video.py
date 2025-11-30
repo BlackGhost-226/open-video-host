@@ -3,8 +3,8 @@ import os
 import json
 from flask import jsonify
 import shutil
-import ffmpeg_helper
-import helper
+import app.ffmpeg_helper as ffmpeg_helper
+import app.helper as helper
 
 
 def process_video(stream_output_dir, video_upload_dir, video_path, has_img, img_path, data):
