@@ -1,6 +1,7 @@
 vector-db/
 streams/
 uploads/
+instance/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
