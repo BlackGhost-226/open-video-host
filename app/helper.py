@@ -4,6 +4,9 @@ from werkzeug.utils import secure_filename
 from typing import Callable
 from flask import render_template
 import json
+import uuid
+import app.helper as helper
+from PIL import Image
 
 search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
 
@@ -64,3 +67,18 @@ def load_item_template(offset, items, offset_number, item_html, **kwargs):
             jdata[item["id"]] = data_json
 
     return render_template(item_html, items=next_items, offset=offset+offset_number, has_more=has_more, jdata=jdata, **kwargs)
+
+
+def save_picture(picture):
+    picture_id = helper.id_creator(picture)
+    picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_id)
+
+    output_size = (125, 125)
+    i = Image.open(picture)
+    i.thumbnail(output_size)
+    i.save(picture_path)
+
+    return picture_id
+
+def id_creator(content):
+    return str(uuid.uuid4())

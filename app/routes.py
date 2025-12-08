@@ -11,6 +11,7 @@ def home():
     return main.home()
 
 @app.route('/upload', methods=['GET', 'POST'])
+@login_required
 def upload():
     return main.upload()
 

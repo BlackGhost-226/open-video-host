@@ -1,10 +1,10 @@
 import json
-from flask import render_template, abort, flash, redirect, url_for
+from flask import render_template, abort, flash, redirect, url_for, request
 from jinja2.exceptions import TemplateNotFound
 from app import app, logger, db, bcrypt
 import os
 import app.helper as helper
-from app.forms import RegistrationForm, LoginForm, VideoUploadForm
+from app.forms import RegistrationForm, LoginForm, VideoUploadForm, UpdateAccountForm
 import app.api as api
 from flask_login import login_user, current_user, logout_user
 from app.models import User, Video
@@ -21,6 +21,7 @@ def upload():
         text = form.title.data
         api.upload_file(video, img, text)
         flash(f'Video had been uploaded!', 'success')
+        return redirect(url_for('home'))
         #return redirect
     return render_template('upload.html', active=3, title='Upload', form=form)
 
@@ -70,7 +71,22 @@ def logout():
     return redirect(url_for('home'))
 
 def account():
-    return render_template('account.html', title='Account')
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = helper.save_picture(form.picture.data)
+            current_user.image_file = picture_file
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('account'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+    image_file = url_for('static', filename='profile_pics/' + current_user.image_file)
+    return render_template('account.html', title='Account',
+                           image_file=image_file, form=form)
 
 #def open_page(page):
 #    try:

@@ -1,11 +1,12 @@
 import json
 import threading
-from app import app, logger, ALLOWED_VIDEO_EXTENSIONS, ALLOWED_IMG_EXTENSIONS, chromadb_client, SEARCH_COL_NAME
+from app import app, logger, ALLOWED_VIDEO_EXTENSIONS, ALLOWED_IMG_EXTENSIONS, chromadb_client, SEARCH_COL_NAME, db
 from flask import request, jsonify, send_from_directory, render_template
 import app.helper as helper
-import uuid
 import os
 from app.process_video import process_video
+from app.models import Video
+from flask_login import current_user
 
 
 search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
@@ -28,7 +29,7 @@ def upload_file(video, img, text):
 
     if video and helper.allowed_file(video.filename, ALLOWED_VIDEO_EXTENSIONS):
         # Generate a unique ID for this video
-        video_id = str(uuid.uuid4())
+        video_id = helper.id_creator(video)
 
         # Create directories for this video
         video_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], video_id)
@@ -46,6 +47,10 @@ def upload_file(video, img, text):
             "title": text,
             "date": None
         }
+
+        video = Video(id=video_id, title=text, author=current_user)
+        db.session.add(video)
+        db.session.commit()
 
         # video to search db
         search_col.add(
