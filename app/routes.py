@@ -1,92 +1,63 @@
-from flask import request, jsonify
-from app import app, SEARCH_COL_NAME, chromadb_client
-from flask_login import login_required
-
-
-# =| main |=
-import app.main as main
+from app import app, bcrypt, db
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import current_user, login_required, login_user, logout_user
+from app.models import User, Video
+from app.forms import RegistrationForm, LoginForm
 
 @app.route('/')
 def home():
-    return main.home()
+    return render_template('index.html', active=1)
 
-@app.route('/upload', methods=['GET', 'POST'])
-@login_required
-def upload():
-    return main.upload()
-
+# ===| Users |===
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    return main.register()
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        uesr = User(username=form.username.data, email=form.email.data, password=hashed_password)
+        db.session.add(uesr)
+        db.session.commit()
+        flash('Your account has been created! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html', title='Register', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     next_page = request.args.get('next')
-    return main.login(next_page)
-
-@app.route('/video')
-def video():
-    video_id = request.args.get('id')
-    return main.video(video_id)
-
-@app.route('/search')
-def search():
-    query = request.args.get('q')
-    return main.search(query)
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and bcrypt.check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember.data)
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+    return render_template('login.html', title='Login', form=form)
 
 @app.route("/account")
 @login_required
 def account():
-    return main.account()
+    return 'test'
 
 @app.route("/logout")
 def logout():
-    return main.logout()
+    logout_user()
+    return redirect(url_for('home'))
 
+# ===| Videos |===
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
+def upload():
+    return 'test'
 
+@app.route('/video')
+def video():
+    #video_id = request.args.get('id')
+    return 'test'
 
-# =| api |=
-import app.api as api
-
-#@app.route('/api/upload', methods=['POST'])
-#def upload_file():
-#    return api.upload_file() 
-
-@app.route('/api/stream/<video_id>/<format_type>/<path:filename>')
-def stream_file(video_id, format_type, filename):
-    key = request.args.get('key', None)
-    return api.stream_file(video_id, format_type, filename, key)
-
-@app.route('/api/load-feed')
-def load_feed():
-    offset = int(request.args.get('offset', 0))
-    return api.load_feed(offset)
-
-@app.route('/api/load-search')
-def load_search_feed():
-    offset = int(request.args.get('offset', 0))
-    query = request.args.get('q')
-    return api.load_search_feed(offset, query)
-
-
-
-# =| debug |=
-testing = True
-if testing:
-    import app.helper as helper
-
-    search_col = chromadb_client.get_collection(name=SEARCH_COL_NAME)
-    @app.route('/debug/video-list')
-    def video_list():
-        return jsonify(helper.video_list())
-
-    @app.route('/debug/vector-list')
-    def vector_list():
-        get = search_col.get()
-        return jsonify(get)
-
-    @app.route('/debug/vector-get')
-    def get_v_db():
-        query = request.args.get('q')
-        results = search_col.query(query_texts=[query], n_results=4)
-        return results
+@app.route('/search')
+def search():
+    #query = request.args.get('q')
+    return 'test'

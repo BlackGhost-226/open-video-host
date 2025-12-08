@@ -28,5 +28,5 @@ class Video(db.Model):
     def __repr__(self):
         return f"Post('{self.title}', '{self.date_posted}')"
     
-#with app.app_context():
-#    db.create_all()
+with app.app_context():
+    db.create_all()
