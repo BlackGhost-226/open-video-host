@@ -11,3 +11,40 @@ services:
       - FLASK_DEBUG=1
     volumes:
       - ./:/app
+    
+  #postgres:
+  #  image: postgres:16.3
+  #  restart: always
+  #  ports:
+  #    - 5432:5432
+  #  environment:
+  #    POSTGRES_USER: myuser
+  #    POSTGRES_DB: mydb
+  #    POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+  #  secrets:
+  #    - pg_password
+  #  volumes:
+  #    - ./instance:/var/lib/postgresql/data
+    #networks:
+    #  - private
+
+  db:
+    image: postgres:16.3
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    volumes:
+      - ./instance:/var/lib/postgresql/data 
+ 
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - 8080:8080
+ 
+volumes:
+  pgdata:

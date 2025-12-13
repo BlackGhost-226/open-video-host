@@ -40,7 +40,7 @@ app.config.update(
     OUTPUT_FOLDER=OUTPUT_FOLDER,
     MAX_CONTENT_LENGTH=MAX_CONTENT_LENGTH,
     SECRET_KEY=os.getenv("SK"),
-    SQLALCHEMY_DATABASE_URI="sqlite:///site.db",
+    SQLALCHEMY_DATABASE_URI="postgresql://test:test@db:5432/test",
 )
 
 
