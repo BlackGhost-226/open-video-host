@@ -25,22 +25,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # === Directory Config ===
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "streams"
+#UPLOAD_FOLDER = "uploads"
+#OUTPUT_FOLDER = "streams"
 ALLOWED_VIDEO_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "wmv", "flv", "webm"}
 ALLOWED_IMG_EXTENSIONS = {"jpg", "png", "jpeg", "gif"}
 MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+#os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+#os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # === Flask Config ===
 app.config.update(
-    UPLOAD_FOLDER=UPLOAD_FOLDER,
-    OUTPUT_FOLDER=OUTPUT_FOLDER,
+    #UPLOAD_FOLDER=UPLOAD_FOLDER,
+    #OUTPUT_FOLDER=OUTPUT_FOLDER,
     MAX_CONTENT_LENGTH=MAX_CONTENT_LENGTH,
     SECRET_KEY=os.getenv("SK"),
-    SQLALCHEMY_DATABASE_URI="postgresql://test:test@db:5432/test",
+    SQLALCHEMY_DATABASE_URI="postgresql://test:test@postgresql_db:5432/test",
 )
 
 

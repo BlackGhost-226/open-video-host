@@ -1,8 +1,13 @@
-from app import app, bcrypt, db
+from app import app, bcrypt, db, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required, login_user, logout_user
 from app.models import User, Video
-from app.forms import RegistrationForm, LoginForm
+from app.forms import RegistrationForm, LoginForm, VideoUploadForm
+import app.utils as utils
+import requests
+from werkzeug.utils import secure_filename
+import uuid
+
 
 @app.route('/')
 def home():
@@ -50,7 +55,52 @@ def logout():
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
-    return 'test'
+    form = VideoUploadForm()
+    if form.validate_on_submit():
+        video = form.video.data
+        img = form.thumbnail.data
+        title = form.title.data
+
+        if not utils.allowed_file(video.filename, ALLOWED_VIDEO_EXTENSIONS):
+            flash('Video format is incorrect.', 'warning')
+            return redirect(url_for('upload'))
+
+        has_img = bool
+        if not img:
+            has_img = False
+        else:
+            if img and utils.allowed_file(img.filename, ALLOWED_IMG_EXTENSIONS):
+                has_img = True
+            else:
+                flash('Image format is incorrect.', 'warning')
+                return redirect(url_for('upload'))
+        
+        upload_id = uuid.uuid4()
+
+        upload_url = requests.get(f"http://data_gateway:8282/minio/upload-url?object_name={upload_id}/video").json()["upload_url"]
+        requests.put(url=upload_url,
+                     data=video,
+                     headers={
+                        "Content-Type": video.mimetype,
+                        "X-Video-Format": video.filename.split('.')[1]
+                        }
+                    )
+
+        if has_img:
+            upload_url = requests.get(f"http://data_gateway:8282/minio/upload-url?object_name={upload_id}/thumbnail").json()["upload_url"]
+            requests.put(url=upload_url,
+                        data=img,
+                        headers={
+                            "Content-Type": img.mimetype,
+                            "X-Video-Format": img.filename.split('.')[1]
+                            }
+                        )
+        
+        requests.get(f"http://worker:4242/?upload_id={upload_id}&has_img={has_img}&title={title}")
+
+        flash('Video is processing!', 'success')
+        return redirect(url_for('home'))
+    return render_template('upload.html', active=3, title='Upload', form=form)
 
 @app.route('/video')
 def video():

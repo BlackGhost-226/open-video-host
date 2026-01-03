@@ -4,7 +4,7 @@ import json
 from flask import jsonify
 import shutil
 import app.ffmpeg_helper as ffmpeg_helper
-import app.helper as helper
+import app.utils as utils
 
 
 def process_video(stream_output_dir, video_upload_dir, video_path, has_img, img_path, data):
@@ -22,11 +22,11 @@ def process_video(stream_output_dir, video_upload_dir, video_path, has_img, img_
             with open(data_dir+"/data.json", "w") as f:
                 f.write(json_str)
 
-            if not helper.compress_file(video_path, ffmpeg_helper.compress_video):
+            if not utils.compress_file(video_path, ffmpeg_helper.compress_video):
                 return jsonify({"error:": "cannot compress video"}), 400
         
             if has_img:
-                if not helper.compress_file(img_path, ffmpeg_helper.compress_img):
+                if not utils.compress_file(img_path, ffmpeg_helper.compress_img):
                     return jsonify({"error:": "cannot compress img"}), 400
                 shutil.move(img_path, data_dir+"/thumbnail.jpg")
             else:
