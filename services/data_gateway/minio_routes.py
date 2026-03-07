@@ -1,34 +1,7 @@
-import os
-from fastapi import FastAPI, HTTPException
-from minio import Minio
+from data_gateway import app, minio_client, UPLOAD_BUCKET, OUTPUT_BUCKET, MIME_TO_EXT
+from fastapi import HTTPException
 from datetime import timedelta
 
-app = FastAPI()
-
-
-minio_client = Minio(
-    os.getenv("MINIO_ENDPOINT"),
-    access_key=os.getenv("MINIO_ROOT_USER"),
-    secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
-    secure=False
-)
-
-UPLOAD_BUCKET = "uploads"
-OUTPUT_BUCKET = "streams"
-MIME_TO_EXT = {
-    "video/mp4": "mp4",
-    "video/quicktime": "mov",
-    "video/webm": "webm",
-    "video/x-matroska": "mkv"
-}
-
-
-def ensure_bucket(bucket: str):
-    if not minio_client.bucket_exists(bucket):
-        minio_client.make_bucket(bucket)
-
-ensure_bucket(UPLOAD_BUCKET)
-ensure_bucket(OUTPUT_BUCKET)
 
 @app.get("/minio/upload-url")
 def create_upload_url(object_name: str, bucket: str = UPLOAD_BUCKET):

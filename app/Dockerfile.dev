@@ -9,14 +9,17 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir /app
 WORKDIR /app
 
-EXPOSE 5000
+EXPOSE 80
 
 COPY r.txt .
 RUN pip install --no-cache-dir -r r.txt
 
-COPY ./app .
+COPY ./app ./app
+COPY ./models/login ./login
+COPY ./models/jwt_token ./jwt_token
 
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
+ENV PYTHONUNBUFFERED=1
 
-CMD ["flask", "--app=app", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["flask", "--app=app", "run", "--host=0.0.0.0", "--port=80"]

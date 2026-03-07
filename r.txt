@@ -15,6 +15,7 @@ charset-normalizer==3.4.3
 chromadb==1.2.0
 click==8.3.0
 coloredlogs==15.0.1
+cryptography==46.0.3
 distro==1.9.0
 dnspython==2.8.0
 durationpy==0.10
@@ -25,7 +26,6 @@ filelock==3.20.0
 Flask==3.1.2
 Flask-Bcrypt==1.0.1
 flask-cors==6.0.1
-Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.2
 flatbuffers==25.9.23
@@ -80,6 +80,7 @@ pycryptodome==3.23.0
 pydantic==2.12.3
 pydantic_core==2.41.4
 Pygments==2.19.2
+PyJWT==2.10.1
 PyPika==0.48.9
 pyproject_hooks==1.2.0
 python-dateutil==2.9.0.post0
@@ -110,6 +111,7 @@ urllib3==2.3.0
 uuid7==0.1.0
 uvicorn==0.38.0
 uvloop==0.22.1
+validators==0.35.0
 watchfiles==1.1.1
 websocket-client==1.9.0
 websockets==15.0.1

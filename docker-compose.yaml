@@ -1,30 +1,4 @@
 services:
-  flask:
-    image: webapp-flask
-    build:
-      context: .
-      dockerfile: ./app/Dockerfile.dev
-    ports:
-      - 5000:5000
-    volumes:
-      - ./:/app
-    
-  #postgres:
-  #  image: postgres:16.3
-  #  restart: always
-  #  ports:
-  #    - 5432:5432
-  #  environment:
-  #    POSTGRES_USER: myuser
-  #    POSTGRES_DB: mydb
-  #    POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
-  #  secrets:
-  #    - pg_password
-  #  volumes:
-  #    - ./instance:/var/lib/postgresql/data
-    #networks:
-    #  - private
-
   postgresql_db:
     image: postgres:16.3
     restart: always
@@ -37,11 +11,16 @@ services:
     volumes:
       - ./instance:/var/lib/postgresql/data 
  
-  adminer:
-    image: adminer:latest
-    restart: always
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: bg@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: postgres
     ports:
-      - 8080:8080
+      - "5454:80"
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
 
   minio:
     image: minio/minio
@@ -54,26 +33,44 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
-    
-  data_gateway:
-    image: data-gateway
-    build:
-      context: .
-      dockerfile: helper-services/data_gateway/Dockerfile
-    ports:
-      - 8282:8282
-    environment:
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
   
-  worker:
-    image: worker
+  flask:
+    image: webapp-flask
     build:
       context: .
-      dockerfile: helper-services/video_worker/Dockerfile
+      dockerfile: ./app/Dockerfile.dev
     ports:
-      - 4242:4242
+      - 80:80
+    volumes:
+      - ./app:/app/app
+    
+  #data_gateway:
+  #  image: data-gateway
+  #  build:
+  #    context: .
+  #    dockerfile: services/data_gateway/Dockerfile
+  #  environment:
+  #    MINIO_ENDPOINT: minio:9000
+  #    MINIO_ROOT_USER: minio
+  #    MINIO_ROOT_PASSWORD: minio123
+  
+  #worker:
+  #  image: worker
+  #  build:
+  #    context: .
+  #    dockerfile: services/video_worker/Dockerfile
+  
+  auth_authority:
+    image: auth_authority
+    build:
+      context: .
+      dockerfile: services/auth_authority/Dockerfile
+    environment:
+      - DATABASE_URI=postgresql://test:test@postgresql_db:5432/test
+    ports:
+      - 5000:80
+    volumes:
+      - ./services/auth_authority/rsa:/auth_authority/rsa
  
 volumes:
   postgresql_data:

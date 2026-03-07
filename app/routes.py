@@ -1,6 +1,6 @@
-from app import app, bcrypt, db, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS
+from app import app, bcrypt, db, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import current_user, login_required, login_user, logout_user
+from login.utils import current_user, login_required, login_user, logout_user
 from app.models import User, Video
 from app.forms import RegistrationForm, LoginForm, VideoUploadForm
 import app.utils as utils
@@ -20,10 +20,7 @@ def register():
         return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        uesr = User(username=form.username.data, email=form.email.data, password=hashed_password)
-        db.session.add(uesr)
-        db.session.commit()
+        login_manager.IdPClient.createUser(name=form.username.data, email=form.email.data, passwd=form.password.data)
         flash('Your account has been created! You are now able to log in', 'success')
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
@@ -35,10 +32,9 @@ def login():
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and bcrypt.check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
-            return redirect(next_page) if next_page else redirect(url_for('home'))
+        redirect_to = redirect(next_page) if next_page and utils.is_safe_next_url(next_page) else redirect(url_for('home'))
+        login_user(email=form.email.data, password=form.password.data) #, remember=form.remember.data
+        return redirect_to
     return render_template('login.html', title='Login', form=form)
 
 @app.route("/account")
@@ -77,7 +73,7 @@ def upload():
         
         upload_id = uuid.uuid4()
 
-        upload_url = requests.get(f"http://data_gateway:8282/minio/upload-url?object_name={upload_id}/video").json()["upload_url"]
+        upload_url = requests.get(f"http://data_gateway/minio/upload-url?object_name={upload_id}/video").json()["upload_url"]
         requests.put(url=upload_url,
                      data=video,
                      headers={
@@ -87,16 +83,16 @@ def upload():
                     )
 
         if has_img:
-            upload_url = requests.get(f"http://data_gateway:8282/minio/upload-url?object_name={upload_id}/thumbnail").json()["upload_url"]
+            upload_url = requests.get(f"http://data_gateway/minio/upload-url?object_name={upload_id}/thumbnail").json()["upload_url"]
             requests.put(url=upload_url,
                         data=img,
                         headers={
                             "Content-Type": img.mimetype,
-                            "X-Video-Format": img.filename.split('.')[1]
+                            "X-Image-Format": img.filename.split('.')[1]
                             }
                         )
         
-        requests.get(f"http://worker:4242/?upload_id={upload_id}&has_img={has_img}&title={title}")
+        requests.get(f"http://worker/?upload_id={upload_id}&has_img={has_img}&title={title}")
 
         flash('Video is processing!', 'success')
         return redirect(url_for('home'))

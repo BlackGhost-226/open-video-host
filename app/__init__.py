@@ -6,7 +6,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
+from login.login_manager import LoginManager
 from sqlalchemy.orm import DeclarativeBase
 
 import chromadb
@@ -22,11 +22,9 @@ CORS(app)  # Enable Cross-Origin Resource Sharing
 
 # === Logging ===
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ui")
 
 # === Directory Config ===
-#UPLOAD_FOLDER = "uploads"
-#OUTPUT_FOLDER = "streams"
 ALLOWED_VIDEO_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "wmv", "flv", "webm"}
 ALLOWED_IMG_EXTENSIONS = {"jpg", "png", "jpeg", "gif"}
 MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB
@@ -40,7 +38,7 @@ app.config.update(
     #OUTPUT_FOLDER=OUTPUT_FOLDER,
     MAX_CONTENT_LENGTH=MAX_CONTENT_LENGTH,
     SECRET_KEY=os.getenv("SK"),
-    SQLALCHEMY_DATABASE_URI="postgresql://test:test@postgresql_db:5432/test",
+    SQLALCHEMY_DATABASE_URI="postgresql://test:test@postgresql_db:5432/test"
 )
 
 
@@ -56,7 +54,7 @@ db.init_app(app)
 bcrypt = Bcrypt(app)
 
 # === Login Manager ===
-login_manager = LoginManager(app)
+login_manager = LoginManager(IdP_url="http://auth_authority", app=app)
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 

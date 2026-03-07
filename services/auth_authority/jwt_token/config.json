@@ -1,0 +1,30 @@
+{
+    "csrf_protection_header_name": "X-CSRF-Token",
+    "auth_version": 0,
+    "jwt_tokens": {
+        "access": {
+            "algorithm": "RS256",
+            "issuer": "auth.myapp.internal",
+            "audience": "myapp",
+            "token_exp_seconds": 900,
+            "leeway_seconds": 5,
+            "required_claims": ["fresh", "sub", "user_id", "user_ip"],
+            "optional_claims": ["roles"],
+            "enforce_audience": true,
+            "enforce_issuer": true,
+            "csrf_protection": true
+        },
+        "refresh": {
+            "algorithm": "HS256",
+            "issuer": "auth.myapp.internal",
+            "audience": "myapp",
+            "token_exp_seconds": 604800,
+            "leeway_seconds": 10,
+            "required_claims": [],
+            "optional_claims": [],
+            "enforce_audience": false,
+            "enforce_issuer": true,
+            "csrf_protection": false
+        }
+    }
+}

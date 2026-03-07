@@ -7,13 +7,13 @@ RUN apt-get update && apt-get install -y \
     rustc \
     cargo
 
-RUN mkdir /app
-WORKDIR /app
+RUN mkdir /video_worker
+WORKDIR /video_worker
 
-EXPOSE 4242
+EXPOSE 80
 
 RUN pip install --no-cache-dir fastapi uvicorn requests
 
 COPY ./helper-services/video_worker .
 
-CMD ["uvicorn", "video_worker:app", "--host", "0.0.0.0", "--port", "4242"]
+CMD ["uvicorn", "video_worker:app", "--host", "0.0.0.0", "--port", "80"]

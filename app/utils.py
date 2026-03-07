@@ -6,10 +6,17 @@ from flask import render_template
 import json
 import uuid
 from PIL import Image
+from urllib.parse import urlparse
 
 
 def allowed_file(filename: str, ae: list):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ae
+
+def is_safe_next_url(target: str) -> bool:
+    if not target:
+        return False
+    parsed = urlparse(target)
+    return parsed.scheme == "" and parsed.netloc == ""
 
 def compress_file(file_path: str, compress_func: Callable):
     os.rename(file_path, file_path+".temp")

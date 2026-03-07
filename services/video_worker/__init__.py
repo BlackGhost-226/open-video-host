@@ -17,7 +17,7 @@ def process_video(upload_id: str, has_img: bool, title: str):
     os.makedirs(working_dir, exist_ok=True)
 
 
-    response = requests.get(f"http://data_gateway:8282/minio/download-url?object_name={upload_id}/video&bucket=uploads")
+    response = requests.get(f"http://data_gateway/minio/download-url?object_name={upload_id}/video&bucket=uploads")
     format = response.json()["format"]
     download_url = response.json()["download_url"]
     video_path = os.path.join(working_dir, "video."+format)
@@ -29,7 +29,7 @@ def process_video(upload_id: str, has_img: bool, title: str):
                 file.write(chunk)
     
     if has_img:
-        response = requests.get(f"http://data_gateway:8282/minio/download-url?object_name={upload_id}/thumbnail&bucket=uploads")
+        response = requests.get(f"http://data_gateway/minio/download-url?object_name={upload_id}/thumbnail&bucket=uploads")
         format = response.json()["format"]
         download_url = response.json()["download_url"]
         img_path = os.path.join(working_dir, "thumbnail."+format)
@@ -60,7 +60,7 @@ def process_video(upload_id: str, has_img: bool, title: str):
     hls_result = ffmpeg_utils.convert_to_hls(video_path, hls_output_dir)
     dash_result = ffmpeg_utils.convert_to_dash(video_path, dash_output_dir)
 
-    response = requests.get(f"http://data_gateway:8282/minio/video-upload?title={title}")
+    response = requests.get(f"http://data_gateway/minio/video-upload?title={title}")
     #shutil.rmtree(working_dir)
 
 def compress_file(file_path: str, compress_func: Callable):

@@ -6,13 +6,13 @@ RUN apt-get update && apt-get install -y \
     rustc \
     cargo
 
-RUN mkdir /app
-WORKDIR /app
+RUN mkdir /data_gateway
+WORKDIR /data_gateway
 
-EXPOSE 8282
+EXPOSE 80
 
 RUN pip install --no-cache-dir fastapi minio uvicorn
 
-COPY ./helper-services/data_gateway .
+COPY ./services/data_gateway .
 
-CMD ["uvicorn", "data_gateway:app", "--host", "0.0.0.0", "--port", "8282"]
+CMD ["uvicorn", "data_gateway:app", "--host", "0.0.0.0", "--port", "80"]
