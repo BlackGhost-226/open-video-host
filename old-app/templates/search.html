@@ -1,9 +1,0 @@
-{% extends "layout.html" %}
-{% block content %}
-    <div id="content"
-        hx-get="/api/load-search?q={{ q }}"
-        hx-trigger="revealed"
-        hx-swap="afterend">
-        {% include 'search_items.html' %}
-    </div>
-{% endblock content %}

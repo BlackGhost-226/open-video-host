@@ -1,0 +1,2 @@
+To build the project from source code run `docker-compose -f dev.yaml build --no-cache` from the root directory of the preject.
+And to start it run `docker-compose -f dev.yaml up` from the same directory.

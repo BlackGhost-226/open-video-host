@@ -1,4 +1,3 @@
-from flask import current_app
 from flask import g
 from flask import request
 from flask import redirect
@@ -11,15 +10,12 @@ from jwt_token import Client
 from .utils import _user_context_processor
 from .utils import _cookieSeter
 from .utils import set_auth_cookies
-from .utils import remove_auth_cookies
 
 from jwt_token.token import decode
 from jwt_token.token import AccessToken
 from jwt_token.token import accessTokenConfig
 from jwt_token.token import getUnverifiedClaims
 from jwt import ExpiredSignatureError
-import base64
-import json
 
 
 class LoginManager:
@@ -39,7 +35,7 @@ class LoginManager:
         self.unauthorized_callback = None
         self.needs_refresh_callback = None
 
-        self.IdPClient = Client(base_url="http://auth_authority", 
+        self.IdPClient = Client(base_url="http://idp", 
                                 expected_issuer="auth.myapp.internal", 
                                 expected_audience="ui")
 
@@ -182,7 +178,6 @@ class LoginManager:
                 set_auth_cookies(tokens.access, tokens.refresh)
                 return self._update_request_context_with_user(getUnverifiedClaims(tokens.access))
 
-    
 class User:
     """
     This provides default implementations for the methods that Flask-Login

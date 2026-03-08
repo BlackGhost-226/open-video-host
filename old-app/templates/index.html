@@ -1,9 +1,0 @@
-{% extends "layout.html" %}
-{% block content %}
-    <div id="content"
-        hx-get="/api/load-feed"
-        hx-trigger="revealed"
-        hx-swap="afterend">
-        {% include 'home_items.html' %}
-    </div>
-{% endblock content %}

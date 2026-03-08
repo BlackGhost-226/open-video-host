@@ -9,18 +9,18 @@ services:
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test
     volumes:
-      - ./instance:/var/lib/postgresql/data 
+      - ./data/postgresql:/var/lib/postgresql/data 
  
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: bg@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: postgres
-    ports:
-      - "5454:80"
-    volumes:
-      - ./pgadmin:/var/lib/pgadmin
+  #pgadmin:
+  #  image: dpage/pgadmin4
+  #  container_name: pgadmin
+  #  environment:
+  #    PGADMIN_DEFAULT_EMAIL: bg@gmail.com
+  #    PGADMIN_DEFAULT_PASSWORD: postgres
+  #  ports:
+  #    - "5454:80"
+  #  volumes:
+  #    - ./pgadmin:/var/lib/pgadmin
 
   minio:
     image: minio/minio
@@ -29,20 +29,23 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - ./data:/data
+      - ./data/minio:/data
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
   
-  flask:
-    image: webapp-flask
+  ui:
+    image: ui
     build:
       context: .
-      dockerfile: ./app/Dockerfile.dev
+      dockerfile: ./services/ui/Dockerfile.dev
     ports:
       - 80:80
     volumes:
-      - ./app:/app/app
+      - ./services/ui:/app/app # hot-reload
+    #depends_on:
+    #  idp:
+    #    condition: service_healthy
     
   #data_gateway:
   #  image: data-gateway
@@ -60,18 +63,21 @@ services:
   #    context: .
   #    dockerfile: services/video_worker/Dockerfile
   
-  auth_authority:
-    image: auth_authority
+  idp:
+    image: idp
     build:
       context: .
-      dockerfile: services/auth_authority/Dockerfile
+      dockerfile: ./services/IdP/Dockerfile.dev
     environment:
       - DATABASE_URI=postgresql://test:test@postgresql_db:5432/test
     ports:
       - 5000:80
     volumes:
-      - ./services/auth_authority/rsa:/auth_authority/rsa
- 
-volumes:
-  postgresql_data:
-  minio_data:
+      - ./data/IdP-rsa:/app/app/rsa # key pair
+      - ./services/IdP:/app/app # hot-reload
+    #healthcheck:
+    #  test: ["CMD", "curl --fail http://idp/public_key || exit 1"]
+    #  interval: 2s
+    #  timeout: 5s
+    #  retries: 3
+    #  start_period: 5s

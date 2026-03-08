@@ -3,14 +3,8 @@ import logging
 from dotenv import load_dotenv
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_bcrypt import Bcrypt
 from login.login_manager import LoginManager
-from sqlalchemy.orm import DeclarativeBase
-
-import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 
 # === Environment Setup ===
@@ -41,38 +35,10 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI="postgresql://test:test@postgresql_db:5432/test"
 )
 
-
-# === Database Setup ===
-class Base(DeclarativeBase):
-    pass
-
-
-db = SQLAlchemy(model_class=Base)
-db.init_app(app)
-
-# === Password Hashing ===
-bcrypt = Bcrypt(app)
-
 # === Login Manager ===
 login_manager = LoginManager(IdP_url="http://auth_authority", app=app)
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
 
-
-# === Vector Database (ChromaDB) ===
-CHROMA_PATH = "./vector-db"
-SEARCH_COL_NAME = "search"
-
-chromadb_client = chromadb.PersistentClient(path=CHROMA_PATH)
-
-try:
-    collection = chromadb_client.create_collection(
-        name=SEARCH_COL_NAME,
-        embedding_function=DefaultEmbeddingFunction()
-    )
-except Exception:
-    logger.info("ChromaDB collection already exists or could not be created.")
-
-
 # === Routes Import ===
-from app import routes
+from . import routes

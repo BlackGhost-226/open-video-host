@@ -20,7 +20,13 @@ class Client:
         self.csrfHeaderName = "X-CSRF"
         self.accessCookieName = "access-c"
         self.refreshCookieName = "refresh-c"
-        self.IdPPublicKey = requests.get(url=self.baseUrl+"/public_key").json()["key"]
+        self._IdPPublicKey = None
+
+    @property
+    def IdPPublicKey(self):
+        if self._IdPPublicKey is None:
+            self._IdPPublicKey = requests.get(url=self.baseUrl+"/public_key").json()["key"]
+        return self._IdPPublicKey
     
     def login(self, email, passwd, agent):
         response = requests.post(self.baseUrl+"/login", json={"email": email,

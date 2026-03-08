@@ -1,11 +1,9 @@
 import os
-from app import app, chromadb_client, SEARCH_COL_NAME, logger
+from . import app
 from werkzeug.utils import secure_filename
 from typing import Callable
 from flask import render_template
 import json
-import uuid
-from PIL import Image
 from urllib.parse import urlparse
 
 

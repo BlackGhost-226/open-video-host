@@ -18,7 +18,7 @@ from bcrypt import gensalt
 
 app = FastAPI()
 
-keys_path = "/auth_authority/rsa/"
+keys_path = "/app/app/rsa/"
 private_key_path = keys_path+"private_key.pem"
 public_key_path = keys_path+"public_key.pem"
 
@@ -40,8 +40,8 @@ public_key_pem = public_key_object_to_string(public_key=public_key)
 
 engine = create_engine(getenv("DATABASE_URI"))
 Session = sessionmaker(engine)
-#Base.metadata.drop_all(engine)
-#Base.metadata.create_all(engine)
+Base.metadata.drop_all(engine)
+Base.metadata.create_all(engine)
 
 bcrypt_salt = gensalt()
 

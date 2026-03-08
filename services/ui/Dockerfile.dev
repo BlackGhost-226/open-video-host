@@ -11,12 +11,15 @@ WORKDIR /app
 
 EXPOSE 80
 
-COPY r.txt .
-RUN pip install --no-cache-dir -r r.txt
+COPY ./services/ui ./app
+RUN pip install --no-cache-dir flask==3.1.2 flask-cors==6.0.1 Flask-WTF==1.2.2 \
+    python-dotenv==1.1.1 requests==2.32.5 email-validator==2.3.0
 
-COPY ./app ./app
 COPY ./models/login ./login
+RUN pip install --no-cache-dir flask==3.1.2
+
 COPY ./models/jwt_token ./jwt_token
+RUN pip install --no-cache-dir pyjwt[crypto]==2.10.1 requests==2.32.5
 
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
