@@ -15,8 +15,8 @@ from jwt_token.token import encode
 from jwt_token.token import decode
 from uuid import uuid4
 
-from .models import User
-from .models import RefreshToken
+from models import User
+from models import RefreshToken
 from sqlalchemy import select
 
 from fastapi import HTTPException
@@ -63,7 +63,7 @@ async def login(post_data: login_POST):
                               config=accessTokenConfig)
 
         refresh_token = encode(secret=private_key_pem,
-                              token=token.RefreshToken({"jti": str(refresh.id_jti), "csrf": csrf}),
+                              token=token.RefreshToken({"jti": str(refresh.id), "csrf": csrf}),
                               config=refreshTokenConfig)
 
         session.commit()
@@ -80,7 +80,7 @@ async def login(post_data: login_POST):
 async def refresh(post_data: refresh_POST):
     with Session() as session:
         refresh_token = decode(encoded_token=post_data.refresh_token, secret=public_key_pem, token=token.RefreshToken, config=refreshTokenConfig)
-        refresh_token_db = session.execute(select(RefreshToken).where(RefreshToken.id_jti == refresh_token.jwtId)).scalar_one_or_none()
+        refresh_token_db = session.execute(select(RefreshToken).where(RefreshToken.id == refresh_token.jwtId)).scalar_one_or_none()
 
         if refresh_token_db is None:
             raise HTTPException(status_code=404, detail="There is no such refresh token")
@@ -105,7 +105,7 @@ async def refresh(post_data: refresh_POST):
                                   token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti)}), 
                                   config=accessTokenConfig)
             refresh_token = encode(secret=private_key_pem,
-                              token=token.RefreshToken({"jti": str(refresh.id_jti), "csrf": csrf}),
+                              token=token.RefreshToken({"jti": str(refresh.id), "csrf": csrf}),
                               config=refreshTokenConfig)
 
             session.commit()

@@ -59,7 +59,7 @@ class JWTDecodeConfig:
 accessTokenConfig = JWTDecodeConfig(algorithm="RS256", 
                                     issuer="auth.myapp.internal", 
                                     audience="all",
-                                    exp_seconds=10) # 900
+                                    exp_seconds=900)
 
 refreshTokenConfig = JWTDecodeConfig(algorithm="RS256", # HS256
                                      issuer="auth.myapp.internal", 

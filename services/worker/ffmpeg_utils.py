@@ -1,5 +1,15 @@
 import subprocess
 import os
+from typing import Callable
+
+
+def compress_file(file_path: str, compress_func: Callable):
+    os.rename(file_path, file_path+".temp")
+    com = compress_func(file_path+".temp", file_path)
+    if not com:
+        return False
+    os.remove(file_path+".temp")
+    return True
 
 
 def convert_to_hls(input_path: str, output_dir: str):

@@ -1,14 +1,10 @@
-import os
 import logging
-from dotenv import load_dotenv
+from secrets import token_hex
 
 from flask import Flask
 from flask_cors import CORS
 from login.login_manager import LoginManager
 
-
-# === Environment Setup ===
-load_dotenv()
 
 # === App Initialization ===
 app = Flask(__name__)
@@ -28,11 +24,8 @@ MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB
 
 # === Flask Config ===
 app.config.update(
-    #UPLOAD_FOLDER=UPLOAD_FOLDER,
-    #OUTPUT_FOLDER=OUTPUT_FOLDER,
     MAX_CONTENT_LENGTH=MAX_CONTENT_LENGTH,
-    SECRET_KEY=os.getenv("SK"),
-    SQLALCHEMY_DATABASE_URI="postgresql://test:test@postgresql_db:5432/test"
+    SECRET_KEY=token_hex(16)
 )
 
 # === Login Manager ===

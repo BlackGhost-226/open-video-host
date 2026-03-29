@@ -32,7 +32,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         redirect_to = redirect(next_page) if next_page and is_safe_next_url(next_page) else redirect(url_for('home'))
-        login_user(email=form.email.data, password=form.password.data) #, remember=form.remember.data
+        login_user(email=form.email.data, password=form.password.data, remember=form.remember.data)
         return redirect_to
     return render_template('login.html', title='Login', form=form)
 
@@ -76,8 +76,7 @@ def upload():
         requests.put(url=upload_url,
                      data=video,
                      headers={
-                        "Content-Type": video.mimetype,
-                        "X-Video-Format": video.filename.split('.')[1]
+                        "Content-Type": video.mimetype
                         }
                     )
 
@@ -86,12 +85,15 @@ def upload():
             requests.put(url=upload_url,
                         data=img,
                         headers={
-                            "Content-Type": img.mimetype,
-                            "X-Image-Format": img.filename.split('.')[1]
+                            "Content-Type": img.mimetype
                             }
                         )
         
-        requests.get(f"http://worker/?upload_id={upload_id}&has_img={has_img}&title={title}")
+        requests.post(f"http://worker_manager/new-upload", json={"upload_id": str(upload_id),
+                                                                 "video_size": form.video.data.content_length,
+                                                                 "title": title,
+                                                                 "description": "",
+                                                                 "user_id": current_user.id})
 
         flash('Video is processing!', 'success')
         return redirect(url_for('home'))
@@ -99,8 +101,10 @@ def upload():
 
 @app.route('/video')
 def video():
-    #video_id = request.args.get('id')
-    return 'test'
+    video_id = request.args.get('id')
+    return render_template("player.html", title='Video',
+                            dash_url=f"http://127.0.0.1:33/stream/{video_id}/dash/manifest.mpd",
+                            hls_url=f"http://127.0.0.1:33/stream/{video_id}/hls/playlist.m3u8")
 
 @app.route('/search')
 def search():

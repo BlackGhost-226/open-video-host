@@ -10,17 +10,21 @@ services:
       POSTGRES_DB: test
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data 
- 
-  #pgadmin:
-  #  image: dpage/pgadmin4
-  #  container_name: pgadmin
-  #  environment:
-  #    PGADMIN_DEFAULT_EMAIL: bg@gmail.com
-  #    PGADMIN_DEFAULT_PASSWORD: postgres
-  #  ports:
-  #    - "5454:80"
-  #  volumes:
-  #    - ./pgadmin:/var/lib/pgadmin
+  
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    #environment:
+    #  RABBITMQ_DEFAULT_USER: admin
+    #  RABBITMQ_DEFAULT_PASS: secure_password
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 15s
+      retries: 3
 
   minio:
     image: minio/minio
@@ -47,21 +51,27 @@ services:
     #  idp:
     #    condition: service_healthy
     
-  #data_gateway:
-  #  image: data-gateway
-  #  build:
-  #    context: .
-  #    dockerfile: services/data_gateway/Dockerfile
-  #  environment:
-  #    MINIO_ENDPOINT: minio:9000
-  #    MINIO_ROOT_USER: minio
-  #    MINIO_ROOT_PASSWORD: minio123
+  data_gateway:
+    image: data-gateway
+    build:
+      context: .
+      dockerfile: services/data_gateway/Dockerfile
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+      DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
+    ports:
+      - 33:80
   
-  #worker:
-  #  image: worker
-  #  build:
-  #    context: .
-  #    dockerfile: services/video_worker/Dockerfile
+  worker:
+    image: worker
+    build:
+      context: .
+      dockerfile: services/worker/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
   
   idp:
     image: idp
@@ -75,9 +85,18 @@ services:
     volumes:
       - ./data/IdP-rsa:/app/app/rsa # key pair
       - ./services/IdP:/app/app # hot-reload
-    #healthcheck:
-    #  test: ["CMD", "curl --fail http://idp/public_key || exit 1"]
-    #  interval: 2s
-    #  timeout: 5s
-    #  retries: 3
-    #  start_period: 5s
+
+  registry:
+    image: service_registry
+    build:
+      context: .
+      dockerfile: ./services/service_registry/Dockerfile.dev
+  
+  worker_manager:
+    image: worker_manager
+    build:
+      context: .
+      dockerfile: ./services/worker_manager/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy

@@ -11,10 +11,9 @@ WORKDIR /app
 
 EXPOSE 80
 
-RUN pip install --no-cache-dir fastapi minio uvicorn sqlalchemy psycopg2-binary
+COPY ./services/service_registry ./app
+RUN pip install --no-cache-dir fastapi==0.128.0 uvicorn==0.38.0 requests==2.32.5
 
-COPY ./services/data_gateway ./app
-
-COPY ./libs/models ./models
+COPY ./libs/async_worker ./async_worker
 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]

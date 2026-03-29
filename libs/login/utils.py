@@ -26,7 +26,7 @@ def _get_user():
     return None
 
 
-def login_user(email: str, password: str):
+def login_user(email: str, password: str, remember: bool = True):
     current_login_manager = current_app.login_manager
     IdPClient = current_login_manager.IdPClient
     tokens = IdPClient.login(email=email, 
@@ -34,7 +34,7 @@ def login_user(email: str, password: str):
                              agent=request.headers.get("User-Agent"))
     access_token = tokens.access
     refresh_token = tokens.refresh
-    set_auth_cookies(access_token, refresh_token)
+    set_auth_cookies(access_token, refresh_token if remember else "")
     current_app.login_manager._load_user()
 
 def logout_user():

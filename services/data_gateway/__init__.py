@@ -1,6 +1,9 @@
 import os
 from fastapi import FastAPI
 from minio import Minio
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from os import getenv
 
 app = FastAPI()
 
@@ -30,8 +33,9 @@ ensure_bucket(UPLOAD_BUCKET)
 ensure_bucket(OUTPUT_BUCKET)
 
 # --| postgresql |--
-
+engine = create_engine(getenv("DATABASE_URI"))
+connection = engine.connect()
+Session = sessionmaker(engine)
 
 # --| routes |--
-import minio_routes
-import postgresql_routes
+from . import routes
