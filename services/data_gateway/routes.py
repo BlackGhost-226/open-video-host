@@ -7,60 +7,45 @@ from . import MIME_TO_EXT
 from . import Session
 from sqlalchemy import select
 from sqlalchemy import insert
-from sqlalchemy.exc import ProgrammingError
 from .posts import create_row_POST
 from models import Video
+from typing import Optional
 
 from fastapi import HTTPException
+from fastapi import Request
 from fastapi.responses import StreamingResponse
-from datetime import timedelta
+from io import BytesIO
 
 
-@app.get("/minio/upload-url")
-def create_upload_url(object_name: str, bucket: str = UPLOAD_BUCKET):
-    """
-    Returns a URL to upload a file directly to MinIO
-    """
-    try:
-        url = minio_client.presigned_put_object(
-            bucket,
-            object_name,
-            expires=timedelta(hours=1)
-        )
-        return {
-            "bucket": bucket,
-            "object": object_name,
-            "upload_url": url
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.put("/minio/{bucket}/{object_name:path}")
+async def upload_stream(object_name: str, request: Request, bucket: str = UPLOAD_BUCKET):
+    buffer = BytesIO()
 
-@app.get("/minio/download-url")
-def create_download_url(object_name: str, bucket: str = OUTPUT_BUCKET):
-    """
-    Returns a URL to download a file
-    """
-    try:
-        url = minio_client.presigned_get_object(
-            bucket,
-            object_name,
-            expires=timedelta(hours=1)
-        )
+    async for chunk in request.stream():
+        buffer.write(chunk)
 
-        stat = minio_client.stat_object(bucket, object_name)
+    buffer.seek(0)
 
-        fmt = MIME_TO_EXT.get(stat.content_type)
+    minio_client.put_object(
+        bucket_name=bucket,
+        object_name=object_name,
+        data=buffer,
+        length=buffer.getbuffer().nbytes)
+    return {
+        "bucket": bucket,
+        "object": object_name
+    }
 
-        return {
-            "bucket": bucket,
-            "object": object_name,
-            "download_url": url,
-            "format": fmt
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.get("/minio/{bucket}/{object_name:path}")
+async def download_stream(object_name: str, bucket: str = OUTPUT_BUCKET):
+    stat = minio_client.stat_object(bucket, object_name)
+    fmt = MIME_TO_EXT.get(stat.content_type)
+    respones = minio_client.get_object(bucket_name=bucket, object_name=object_name)
+    return StreamingResponse(content=respones, 
+                             headers={"Content-Type": stat.content_type, 
+                                      "format": fmt})
 
-@app.get("/minio/delete-object")
+@app.delete("/minio/{bucket}/{object_name:path}")
 def delete_object(bucket: str, object_name: str):
     """
     Deletes an object from MinIO.
@@ -74,33 +59,36 @@ def delete_object(bucket: str, object_name: str):
         "object": object_name
     }
 
-@app.get("/stream/{video_id}/{format_type}/{filename}")
-def stream(video_id: str, format_type: str, filename: str):
-    respones = minio_client.get_object(OUTPUT_BUCKET, f"{video_id}/{format_type}/{filename}")
+@app.get("/stream/{video_id}/{file_path:path}")
+def stream(video_id: str, file_path: str):
+    """
+    The same as /minio/download but without permissions and works only with 'OUTPUT_BUCKET'
+    """
+    respones = minio_client.get_object(OUTPUT_BUCKET, f"{video_id}/{file_path}")
     return StreamingResponse(respones)
 
 
 tables = {Video.__tablename__: Video}
 @app.get("/db/{table}")
-def get_row(table: str, id: str):
+def get_row(table: str, id: Optional[str] = None):
     with Session() as session:
-        try:
-            sql_table = tables[table]
-            results = session.execute(select(sql_table).where(sql_table.id == id))
-        except ProgrammingError:
-            raise HTTPException(404)
+        sql_table = tables.get(table)
+        if not sql_table:
+            raise HTTPException(status_code=404, detail="Table not found")
+        if id:
+            results = session.execute(select(*sql_table.__table__.c).where(sql_table.id == id))
         else:
-            result_dict = results.mappings().first()
-    return result_dict
+            results = session.execute(select(*sql_table.__table__.c))
+        result_list = results.mappings().all()
+    return {"list": result_list}
 
 @app.post("/db/{table}")
 def add_row(table: str, post_data: create_row_POST):
     with Session() as session:
-        try:
-            sql_table = tables[table]
-            results = session.execute(insert(sql_table).values(**post_data.kwargs).returning(sql_table))
-        except ProgrammingError:
-            raise HTTPException(400)
-        else:
-            result_dict = results.mappings().first()
-    return result_dict
+        sql_table = tables.get(table)
+        if not sql_table:
+            raise HTTPException(status_code=404, detail="Table not found")
+        results = session.execute(insert(sql_table).values(**post_data.kwargs).returning(*sql_table.__table__.c))
+        result_list = results.mappings().all()
+        session.commit()
+    return {"list": result_list}

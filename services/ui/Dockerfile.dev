@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir flask==3.1.2
 COPY ./libs/jwt_token ./jwt_token
 RUN pip install --no-cache-dir pyjwt[crypto]==2.10.1 requests==2.32.5
 
+COPY ./libs/clients ./clients
+
 ENV FLASK_ENV=development
 ENV FLASK_DEBUG=1
 ENV PYTHONUNBUFFERED=1

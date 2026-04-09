@@ -41,7 +41,7 @@ class Video(Base):
     __tablename__ = "videos"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     title: Mapped[str] = mapped_column(String(100))
-    description: Mapped[str] = mapped_column(String(5000))
+    description: Mapped[Optional[str]] = mapped_column(String(5000))
     author_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     author: Mapped["User"] = relationship(back_populates="videos")
 

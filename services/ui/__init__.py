@@ -5,6 +5,8 @@ from flask import Flask
 from flask_cors import CORS
 from login.login_manager import LoginManager
 
+from clients.data_gateway import GatewayClient
+
 
 # === App Initialization ===
 app = Flask(__name__)
@@ -15,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ui")
 
 # === Directory Config ===
-ALLOWED_VIDEO_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "wmv", "flv", "webm"}
+ALLOWED_VIDEO_EXTENSIONS = {"mp4", "mov", "mkv", "webm"}
 ALLOWED_IMG_EXTENSIONS = {"jpg", "png", "jpeg", "gif"}
 MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB
 
@@ -32,6 +34,9 @@ app.config.update(
 login_manager = LoginManager(IdP_url="http://auth_authority", app=app)
 login_manager.login_view = "login"
 login_manager.login_message_category = "info"
+
+# === GWClient ===
+GWClient = GatewayClient()
 
 # === Routes Import ===
 from . import routes

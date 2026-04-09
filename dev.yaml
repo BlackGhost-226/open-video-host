@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test
     volumes:
-      - ./data/postgresql:/var/lib/postgresql/data 
+      - ./data/postgresql:/var/lib/postgresql/data
   
   rabbitmq:
     image: rabbitmq:management
@@ -25,6 +25,17 @@ services:
       interval: 15s
       timeout: 15s
       retries: 3
+ 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: bg@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: test
+    ports:
+      - 98:80
+  #  volumes:
+  #    - ./pgadmin:/var/lib/pgadmin
 
   minio:
     image: minio/minio

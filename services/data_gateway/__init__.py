@@ -21,7 +21,10 @@ MIME_TO_EXT = {
     "video/mp4": "mp4",
     "video/quicktime": "mov",
     "video/webm": "webm",
-    "video/x-matroska": "mkv"
+    "video/x-matroska": "mkv",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif"
 }
 
 

@@ -1,4 +1,4 @@
-from . import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager
+from . import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager, GWClient
 from flask import render_template, redirect, url_for, flash, request
 from login.utils import current_user, login_required, login_user, logout_user
 from .forms import RegistrationForm, LoginForm, VideoUploadForm
@@ -7,10 +7,6 @@ import requests
 from werkzeug.utils import secure_filename
 import uuid
 
-
-@app.route('/')
-def home():
-    return render_template('index.html', active=1)
 
 # ===| Users |===
 @app.route('/register', methods=['GET', 'POST'])
@@ -60,7 +56,7 @@ def upload():
             flash('Video format is incorrect.', 'warning')
             return redirect(url_for('upload'))
 
-        has_img = bool
+        has_img = bool()
         if not img:
             has_img = False
         else:
@@ -71,23 +67,9 @@ def upload():
                 return redirect(url_for('upload'))
         
         upload_id = uuid.uuid4()
-
-        upload_url = requests.get(f"http://data_gateway/minio/upload-url?object_name={upload_id}/video").json()["upload_url"]
-        requests.put(url=upload_url,
-                     data=video,
-                     headers={
-                        "Content-Type": video.mimetype
-                        }
-                    )
-
+        GWClient.upload_file_to_minio(file=video, object_name=f"{upload_id}/video", bucket="uploads", content_type=video.mimetype)
         if has_img:
-            upload_url = requests.get(f"http://data_gateway/minio/upload-url?object_name={upload_id}/thumbnail").json()["upload_url"]
-            requests.put(url=upload_url,
-                        data=img,
-                        headers={
-                            "Content-Type": img.mimetype
-                            }
-                        )
+            GWClient.upload_file_to_minio(file=img, object_name=f"{upload_id}/thumbnail", bucket="uploads", content_type=img.mimetype)
         
         requests.post(f"http://worker_manager/new-upload", json={"upload_id": str(upload_id),
                                                                  "video_size": form.video.data.content_length,
@@ -102,11 +84,25 @@ def upload():
 @app.route('/video')
 def video():
     video_id = request.args.get('id')
-    return render_template("player.html", title='Video',
-                            dash_url=f"http://127.0.0.1:33/stream/{video_id}/dash/manifest.mpd",
-                            hls_url=f"http://127.0.0.1:33/stream/{video_id}/hls/playlist.m3u8")
+    return render_template("player.html", title='Video', video_id=video_id)
 
 @app.route('/search')
 def search():
     #query = request.args.get('q')
     return 'test'
+
+@app.route('/stream/<video_id>/<path:file_path>')
+def stream_file(video_id, file_path):
+    return requests.get(f"http://data_gateway/stream/{video_id}/{file_path}").content # TODO
+
+# ===| Home Page |===
+@app.route('/')
+def home():
+    return render_template('index.html', active=1)
+
+@app.route('/load-feed')
+def feed():
+    offset = int(request.args.get('offset', 0))
+    items = GWClient.get_row_from_db(table="videos")
+    has_more = offset+21 < len(items)
+    return render_template("home_items.html", offset=offset+21, items=items, has_more=has_more)

@@ -30,29 +30,15 @@ def process_video(ch, method, properties, body):
     author_id = dict_body["aid"]
     os.makedirs(working_dir, exist_ok=True)
 
-    response = requests.get(f"http://data_gateway/minio/download-url?object_name={upload_id}/video&bucket=uploads")
-    format = response.json()["format"]
-    download_url = response.json()["download_url"]
-    video_path = os.path.join(working_dir, "video."+format)
+    response = GWClient.download_file_from_minio(object_name=f"{upload_id}/video", bucket="uploads")
+    video_path = os.path.join(working_dir, "video."+response[1])
+    GWClient.write_from_stream(response[0], video_path)
 
-    response = requests.get(download_url, stream=True)
-    with open(video_path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                file.write(chunk)
-
-    response = requests.get(f"http://data_gateway/minio/download-url?object_name={upload_id}/thumbnail&bucket=uploads")
-    has_img = response.status_code == 200
+    response = GWClient.download_file_from_minio(object_name=f"{upload_id}/thumbnail", bucket="uploads")
+    has_img = response[0].status_code == 200
     if has_img:
-        format = response.json()["format"]
-        download_url = response.json()["download_url"]
-        img_path = os.path.join(working_dir, "thumbnail."+format)
-
-        response = requests.get(download_url, stream=True)
-        with open(img_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    file.write(chunk)
+        img_path = os.path.join(working_dir, "thumbnail."+response[1])
+        GWClient.write_from_stream(response[0], img_path)
     
     #logger.info(f"Video file uploaded: {video_path}")
 
@@ -75,23 +61,27 @@ def process_video(ch, method, properties, body):
 
 
     # --| adding video to db |--
-    video = GWClient.add_row_to_db(table="videos", key="Video", title=title, description=description, author_user_id=author_id)
+    video = GWClient.add_row_to_db(table="videos", title=title, description=description, author_user_id=author_id)[0]
     video_id = video.id
 
     # --| uploads files |--
+    # hls
     for filename in os.listdir(hls_output_dir):
         filePath = os.path.join(hls_output_dir, filename)
         with open(filePath, "rb") as fileData:
-            GWClient.upload_file_to_minio(fileData, f"{video_id}/hls/{filename}", "streams")
+            GWClient.upload_file_to_minio(fileData, f"{video_id}/hls/{filename}", "streams", content_type="application/x-mpegURL")
     
+    # dash
     for filename in os.listdir(dash_output_dir):
         filePath = os.path.join(dash_output_dir, filename)
         with open(filePath, "rb") as fileData:
-            GWClient.upload_file_to_minio(fileData, f"{video_id}/dash/{filename}", "streams")
+            GWClient.upload_file_to_minio(fileData, f"{video_id}/dash/{filename}", "streams", content_type="application/dash+xml")
     
+    # img
     with open(working_dir+"/thumbnail.jpg", "rb") as imgData:
-        GWClient.upload_file_to_minio(imgData, f"{video_id}/thumbnail.jpg", "streams")
+        GWClient.upload_file_to_minio(imgData, f"{video_id}/thumbnail.jpg", "streams", content_type="image/jpeg")
     
+    # --| remove |--
     GWClient.delete_file_from_minio(upload_id, "uploads")
 
     shutil.rmtree(working_dir)
