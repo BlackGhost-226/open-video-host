@@ -4,10 +4,31 @@ from hmac import compare_digest
 from uuid import uuid4
 import jwt
 
+from jwt.exceptions import ExpiredSignatureError 
+from jwt.exceptions import ImmatureSignatureError 
+from jwt.exceptions import InvalidSignatureError 
+from jwt.exceptions import InvalidAudienceError
+from jwt.exceptions import InvalidIssuerError
+
 class IndalidTokenError(Exception):
     pass
 
-class MissingRequiredClaimError(IndalidTokenError):
+class MissingRequiredClaimError(IndalidTokenError): # Raised when a token's claims doesn't match.
+    pass
+
+class ExpError(IndalidTokenError): # Raised when a token’s exp claim indicates that it has expired.
+    pass
+
+class NbfOrIatInFutureError(IndalidTokenError): # Raised when a token’s nbf or iat claims represent a time in the future.
+    pass
+
+class SignatureError(IndalidTokenError): # Raised when a token’s signature doesn’t match the one provided as part of the token.
+    pass
+
+class AudError(IndalidTokenError): # Raised when a token’s aud claim does not match one of the expected audience values.
+    pass
+
+class IssError(IndalidTokenError): # Raised when a token’s iss claim does not match the expected issuer.
     pass
 
 class JWTToken:
@@ -75,8 +96,8 @@ def decode(encoded_token: str, secret: str, token: type[JWTToken], config: JWTDe
         "verify_iss": True if config.issuer is not None else False,
         "verify_aud": True if config.audience is not None else False
         }
-
-    payload = jwt.decode(
+    try:
+        payload = jwt.decode(
             encoded_token,
             secret,
             algorithms=[config.algorithm],
@@ -84,6 +105,17 @@ def decode(encoded_token: str, secret: str, token: type[JWTToken], config: JWTDe
             issuer=config.issuer,
             options=options
         )
+    except ExpiredSignatureError:
+        raise ExpError()
+    except ImmatureSignatureError:
+        raise NbfOrIatInFutureError()
+    except InvalidAudienceError:
+        raise AudError()
+    except InvalidIssuerError:
+        raise IssError()
+    except InvalidSignatureError:
+        raise SignatureError()
+    
     return token(payload)
 
 def encode(secret: str, token: JWTToken, config: JWTDecodeConfig) -> str:
