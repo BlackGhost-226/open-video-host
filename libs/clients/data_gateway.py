@@ -64,7 +64,7 @@ class GatewayClient:
     
     def download_file_from_minio(self, object_name: str, bucket: str) -> tuple[Response, str]:
         response = requests.get(f"{self.minioUrl}/{bucket}/{object_name}", stream=True)
-        format = response.headers.get("format")
+        format = response.headers.get("Format")
         return (response, format)
     
     def write_from_stream(self, stream: Response, file_path: str) -> None:

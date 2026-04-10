@@ -30,7 +30,8 @@ async def upload_stream(object_name: str, request: Request, bucket: str = UPLOAD
         bucket_name=bucket,
         object_name=object_name,
         data=buffer,
-        length=buffer.getbuffer().nbytes)
+        length=buffer.getbuffer().nbytes,
+        content_type=request.headers.get("Content-Type"))
     return {
         "bucket": bucket,
         "object": object_name
@@ -41,9 +42,8 @@ async def download_stream(object_name: str, bucket: str = OUTPUT_BUCKET):
     stat = minio_client.stat_object(bucket, object_name)
     fmt = MIME_TO_EXT.get(stat.content_type)
     respones = minio_client.get_object(bucket_name=bucket, object_name=object_name)
-    return StreamingResponse(content=respones, 
-                             headers={"Content-Type": stat.content_type, 
-                                      "format": fmt})
+    headers = {"Content-Type": stat.content_type, "Format": fmt}
+    return StreamingResponse(content=respones, headers={key: str(value) for key, value in headers.items() if value is not None})
 
 @app.delete("/minio/{bucket}/{object_name:path}")
 def delete_object(bucket: str, object_name: str):

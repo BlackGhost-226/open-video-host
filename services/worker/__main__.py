@@ -1,5 +1,4 @@
 import pika
-import requests
 import os
 import shutil
 import ffmpeg_utils
