@@ -61,8 +61,15 @@ class Client:
                                                      "last_access_jti": last_access_jti,
                                                      "password": passwd})
 
-    def blacklistTokenPair(self, refresh_token):
-        response = requests.post(self.baseUrl+"/blacklist", json={"refresh_token": refresh_token})
+    def RevokeTokenPair(self, refresh_token):
+        requests.get(self.baseUrl+f"/revoke/{refresh_token}")
+    
+    def CheckIfAccessTokenIsRevoked(self, access_token):
+        response = requests.get(self.baseUrl+f"/check_revocation/{access_token}")
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            return False
     
     def createUser(self, name, email, passwd):
         response = requests.post(self.baseUrl+"/user", json={"username": name,

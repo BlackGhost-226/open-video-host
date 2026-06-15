@@ -13,6 +13,8 @@ from .utils import private_key_object_to_string
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from redis import Redis
+
 app = FastAPI()
 
 keys_path = "/app/app/rsa/"
@@ -37,5 +39,7 @@ public_key_pem = public_key_object_to_string(public_key=public_key)
 
 engine = create_engine(getenv("DATABASE_URI"))
 Session = sessionmaker(engine)
+
+redis_client = Redis(host="redis", port=6379, decode_responses=True)
 
 from . import routes

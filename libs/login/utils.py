@@ -49,7 +49,7 @@ def logout_user():
     return True
 
 
-def confirm_login(): # !
+def confirm_login(): # TODO
     """
     This sets the current session as fresh.
     """

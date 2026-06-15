@@ -6,6 +6,7 @@ from . import app
 from . import private_key_pem
 from . import public_key_pem
 from . import Session
+from . import redis_client
 
 from jwt_token.token import refreshTokenConfig
 from jwt_token.token import accessTokenConfig
@@ -25,6 +26,8 @@ from bcrypt import hashpw
 from bcrypt import gensalt
 
 import validators
+
+from datetime import timedelta
 
 @app.get("/public_key")
 async def get_key():
@@ -132,3 +135,22 @@ def create_user(post_data: create_user_POST):
         session.add(user)
         session.commit()
         return {"user_id": user.id}
+
+@app.get("/revoke/{refresh_token}")
+def token_pair_revocation(refresh_token: str):
+    with Session() as session:
+        refresh_token_db = session.execute(select(RefreshToken).where(RefreshToken.id == refresh_token)).scalar_one_or_none()
+        if refresh_token_db is None:
+            raise HTTPException(status_code=404, detail="There is no such refresh token")
+        
+        last_access_jti = refresh_token_db.last_access_jti
+        session.delete(refresh_token_db)
+        session.commit()
+        redis_client.set(str(last_access_jti), "blocked", ex=accessTokenConfig.exp_seconds)
+
+@app.get("/check_revocation/{access_token}")
+def check_access_token_for_revocation(access_token: str):
+    value = redis_client.get(access_token)
+    if value is None:
+        raise HTTPException(status_code=404, detail="Access token not found")
+    return value

@@ -10,6 +10,7 @@ from jwt_token import Client
 from .utils import _user_context_processor
 from .utils import _cookieSeter
 from .utils import set_auth_cookies
+from .utils import remove_auth_cookies
 
 from jwt_token.token import decode
 from jwt_token.token import AccessToken
@@ -165,6 +166,9 @@ class LoginManager:
                             secret=self.IdPClient.IdPPublicKey,
                             token=AccessToken,
                             config=accessTokenConfig)
+            if self.IdPClient.CheckIfAccessTokenIsRevoked(accessPayload.jwtId):
+                remove_auth_cookies()
+                self._update_request_context_with_user()
             return self._update_request_context_with_user(accessPayload.claims)
         except ExpError:
             refresh_token = request.cookies.get(self.IdPClient.refreshCookieName)

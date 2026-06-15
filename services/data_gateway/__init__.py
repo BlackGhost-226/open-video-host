@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from minio import Minio
+from redis import Redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from os import getenv
@@ -40,6 +41,10 @@ engine = create_engine(getenv("DATABASE_URI"))
 connection = engine.connect()
 Session = sessionmaker(engine)
 
+# --| Redis |--
+redis_client = Redis(host="redis", port=6379, decode_responses=True)
+
 # --| routes |--
 from . import minio_routes
 from . import sql_routes
+#from . import redis_routes

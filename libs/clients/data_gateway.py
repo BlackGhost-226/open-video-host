@@ -47,6 +47,7 @@ class GatewayClient:
         self.baseUrl = "http://data_gateway"
         self.minioUrl = self.baseUrl+"/minio"
         self.dbUrl = self.baseUrl+"/db"
+        self.redisUrl = self.baseUrl+"/redis"
 
         self.chunk_size = 64*1024
     
@@ -76,7 +77,6 @@ class GatewayClient:
     def delete_file_from_minio(self, object_name, bucket) -> None:
         requests.delete(f"{self.minioUrl}/{bucket}/{object_name}")
 
-
     def get_row_from_db(self, table: str, id: str = "") -> list[ResultRow]:
         response = requests.get(f"{self.dbUrl}/{table}?id={id}")
 
@@ -89,8 +89,8 @@ class GatewayClient:
             rows.append(newRow)
         return rows
     
-    def edit_row_in_db(self, id: str, table: str, **fieldsToEdit) -> ResultRow:
-        pass
+    #def edit_row_in_db(self, id: str, table: str, **fieldsToEdit) -> ResultRow:
+    #    pass
     
     def add_row_to_db(self, table: str, **fieldsToAdd) -> list[ResultRow]:
         response = requests.post(f"{self.dbUrl}/{table}", json={"kwargs": fieldsToAdd})
@@ -115,3 +115,13 @@ class GatewayClient:
                 newRow[key] = value
             rows.append(newRow)
         return rows
+
+    def set_redis_key(self, key: str, value: str) -> None:
+        requests.put(self.redisUrl+f"/{key}?value={value}")
+
+    def get_redis_key(self, key: str) -> Optional[str]:
+        response = requests.get(self.redisUrl+f"/{key}")
+        if response.status_code == 404:
+            return None
+        return response.text
+    
