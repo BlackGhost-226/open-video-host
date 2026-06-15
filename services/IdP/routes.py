@@ -6,7 +6,6 @@ from . import app
 from . import private_key_pem
 from . import public_key_pem
 from . import Session
-from . import bcrypt_salt
 
 from jwt_token.token import refreshTokenConfig
 from jwt_token.token import accessTokenConfig
@@ -23,6 +22,7 @@ from fastapi import HTTPException
 
 from bcrypt import checkpw
 from bcrypt import hashpw
+from bcrypt import gensalt
 
 import validators
 
@@ -124,7 +124,7 @@ async def refresh(post_data: refresh_POST):
 @app.post("/user")
 def create_user(post_data: create_user_POST):
     password_bytes = post_data.password.encode("utf-8")
-    password_hash = hashpw(password_bytes, bcrypt_salt)
+    password_hash = hashpw(password_bytes, gensalt())
     if not validators.email(post_data.email):
         raise HTTPException(status_code=400, detail="email is incorrect")
     with Session() as session:

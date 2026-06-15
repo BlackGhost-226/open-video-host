@@ -6,6 +6,11 @@ from ffmpeg_utils import compress_file
 from json import loads
 from clients.data_gateway import GatewayClient
 
+from pika.spec import BasicProperties
+from pika.spec import Basic
+from pika.channel import Channel
+
+
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='rabbitmq'))
 channel = connection.channel()
@@ -16,17 +21,16 @@ channel.basic_qos(prefetch_count=1)
 
 working_dir = "working"
 working_dir = os.path.join(".", working_dir)
-os.mkdir(working_dir)
 
 GWClient = GatewayClient()
 
 
-def process_video(ch, method, properties, body):
-    dict_body = loads(body)
-    upload_id = dict_body["upload_id"]
-    title = dict_body["title"]
-    description = dict_body["description"]
-    author_id = dict_body["aid"]
+def process_video(ch: Channel, method: Basic.Return, properties: BasicProperties, body: bytes):
+    row = GWClient.get_row_from_db("video_tasks", id=body.decode())[0]
+    upload_id = row.get("id")
+    title = row.get("title")
+    description = row.get("description")
+    author_id = row.get("author_user_id")
     os.makedirs(working_dir, exist_ok=True)
 
     response = GWClient.download_file_from_minio(object_name=f"{upload_id}/video", bucket="uploads")
@@ -55,8 +59,8 @@ def process_video(ch, method, properties, body):
     else:
         ffmpeg_utils.get_jpg(video_path, working_dir+"/thumbnail.jpg")
 
-    hls_result = ffmpeg_utils.convert_to_hls(video_path, hls_output_dir)
-    dash_result = ffmpeg_utils.convert_to_dash(video_path, dash_output_dir)
+    ffmpeg_utils.convert_to_hls(video_path, hls_output_dir)
+    ffmpeg_utils.convert_to_dash(video_path, dash_output_dir)
 
 
     # --| adding video to db |--
@@ -76,14 +80,15 @@ def process_video(ch, method, properties, body):
         with open(filePath, "rb") as fileData:
             GWClient.upload_file_to_minio(fileData, f"{video_id}/dash/{filename}", "streams", content_type="application/dash+xml")
     
-    # img
+    # imgage(thumbnail)
     with open(working_dir+"/thumbnail.jpg", "rb") as imgData:
         GWClient.upload_file_to_minio(imgData, f"{video_id}/thumbnail.jpg", "streams", content_type="image/jpeg")
     
     # --| remove |--
     GWClient.delete_file_from_minio(upload_id, "uploads")
-
+    GWClient.delete_row_from_db("video_tasks", upload_id)
     shutil.rmtree(working_dir)
+
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(queue='task_queue', on_message_callback=process_video)

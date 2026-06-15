@@ -13,8 +13,6 @@ from .utils import private_key_object_to_string
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from bcrypt import gensalt
-
 app = FastAPI()
 
 keys_path = "/app/app/rsa/"
@@ -39,7 +37,5 @@ public_key_pem = public_key_object_to_string(public_key=public_key)
 
 engine = create_engine(getenv("DATABASE_URI"))
 Session = sessionmaker(engine)
-
-bcrypt_salt = gensalt()
 
 from . import routes

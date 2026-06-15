@@ -1,9 +1,15 @@
 services:
+  #redis: 
+  #  image: redis:7-alpine
+  #  container_name: redis
+  #  volumes:
+  #    - ./data/redis:/data
+  #  command: redis-server --appendonly yes
+  #  restart: unless-stopped
+
   postgresql_db:
     image: postgres:16.3
     restart: always
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
@@ -18,24 +24,18 @@ services:
       - "5672:5672"
       - "15672:15672"
     #environment:
-    #  RABBITMQ_DEFAULT_USER: admin
-    #  RABBITMQ_DEFAULT_PASS: secure_password
+    #  RABBITMQ_DEFAULT_USER: test
+    #  RABBITMQ_DEFAULT_PASS: test
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 15s
       timeout: 15s
       retries: 3
  
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: bg@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: test
-    ports:
-      - 98:80
-  #  volumes:
-  #    - ./pgadmin:/var/lib/pgadmin
+  adminer:
+        image: adminer:latest
+        ports: 
+          - 98:8080
 
   minio:
     image: minio/minio
@@ -80,6 +80,8 @@ services:
     build:
       context: .
       dockerfile: services/worker/Dockerfile
+    environment:
+      RABBITMQ_URI: 
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -90,7 +92,7 @@ services:
       context: .
       dockerfile: ./services/IdP/Dockerfile.dev
     environment:
-      - DATABASE_URI=postgresql://test:test@postgresql_db:5432/test
+      DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
     ports:
       - 5000:80
     volumes:

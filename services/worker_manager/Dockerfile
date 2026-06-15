@@ -12,6 +12,7 @@ WORKDIR /app
 EXPOSE 80
 
 COPY ./services/worker_manager ./app
-RUN pip install --no-cache-dir fastapi==0.128.0 uvicorn==0.38.0 pika==1.3.2
+COPY ./libs/clients ./clients
+RUN pip install --no-cache-dir fastapi==0.128.0 uvicorn==0.38.0 pika==1.3.2 requests==2.32.5
 
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]

@@ -12,7 +12,7 @@ WORKDIR /app
 
 EXPOSE 80
 
-RUN pip install --no-cache-dir pika requests
+RUN pip install --no-cache-dir pika requests==2.32.5
 
 COPY ./services/worker ./app
 COPY ./libs/clients ./app/clients

@@ -15,7 +15,7 @@ from jwt_token.token import decode
 from jwt_token.token import AccessToken
 from jwt_token.token import accessTokenConfig
 from jwt_token.token import getUnverifiedClaims
-from jwt import ExpiredSignatureError
+from jwt_token.token import ExpError
 
 
 class LoginManager:
@@ -166,7 +166,7 @@ class LoginManager:
                             token=AccessToken,
                             config=accessTokenConfig)
             return self._update_request_context_with_user(accessPayload.claims)
-        except ExpiredSignatureError:
+        except ExpError:
             refresh_token = request.cookies.get(self.IdPClient.refreshCookieName)
             if not refresh_token:
                 return self._update_request_context_with_user()

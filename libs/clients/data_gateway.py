@@ -103,3 +103,15 @@ class GatewayClient:
                 newRow[key] = value
             rows.append(newRow)
         return rows
+    
+    def delete_row_from_db(self, table: str, id: str) -> list[ResultRow]:
+        response = requests.delete(f"{self.dbUrl}/{table}?id={id}")
+
+        rows: list[ResultRow] = list()
+        rowList: list[dict[str, str]] = response.json()["list"]
+        for item in rowList:
+            newRow = ResultRow()
+            for key, value in item.items():
+                newRow[key] = value
+            rows.append(newRow)
+        return rows

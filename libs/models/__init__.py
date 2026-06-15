@@ -25,6 +25,7 @@ class User(Base):
     password_hash: Mapped[bytes] = mapped_column(LargeBinary(60))
     refresh_tokens: Mapped[Optional[List["RefreshToken"]]] = relationship(back_populates="user", cascade="all, delete-orphan")
     videos: Mapped[Optional[List["Video"]]] = relationship(back_populates="author", cascade="all, delete-orphan")
+    video_tasks: Mapped[Optional[list["VideoTask"]]] = relationship(back_populates="author", cascade="all, delete-orphan")
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
@@ -44,6 +45,14 @@ class Video(Base):
     description: Mapped[Optional[str]] = mapped_column(String(5000))
     author_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     author: Mapped["User"] = relationship(back_populates="videos")
+
+class VideoTask(Base):
+    __tablename__ = "video_tasks"
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4) # upload_id
+    title: Mapped[str] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(String(5000))
+    author_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    author: Mapped["User"] = relationship(back_populates="video_tasks")
 
 if False:
     from sqlalchemy import create_engine

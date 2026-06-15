@@ -41,4 +41,5 @@ connection = engine.connect()
 Session = sessionmaker(engine)
 
 # --| routes |--
-from . import routes
+from . import minio_routes
+from . import sql_routes
