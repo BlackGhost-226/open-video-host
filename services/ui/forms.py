@@ -26,6 +26,10 @@ class VideoUploadForm(FlaskForm):
 
     submit = SubmitField('Upload')
 
+class RefreshForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Refresh')
+
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
                            validators=[DataRequired(), Length(min=2, max=20)])

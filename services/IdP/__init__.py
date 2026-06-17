@@ -42,4 +42,7 @@ Session = sessionmaker(engine)
 
 redis_client = Redis(host="redis", port=6379, decode_responses=True)
 
+dumy_password_hash = b"$2b$12$8O4ULU1NSLNOX8v5nTY5wORKwy3iyTasrCMBiZgi104aFnaHZ4AT."
+dumy_password = "hfbgvkf4i78"
+
 from . import routes

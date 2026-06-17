@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from hmac import compare_digest
-from uuid import uuid4
+from typing import Optional
 import jwt
+
+from datetime import timedelta
+from datetime import datetime
+from datetime import timezone
 
 from jwt.exceptions import ExpiredSignatureError 
 from jwt.exceptions import ImmatureSignatureError 
@@ -61,6 +63,7 @@ class AccessToken(JWTToken):
         super().__init__(token)
         self.jwtId = self.addClaimOrError(token, "jti")
         self.userId = self.addClaimOrError(token, "sub")
+        self.fresh = self.addClaimOrError(token, "fresh")
         self.csrf = self.addClaimOrError(token, "csrf")
 
 class RefreshToken(JWTToken):
@@ -80,12 +83,12 @@ class JWTDecodeConfig:
 accessTokenConfig = JWTDecodeConfig(algorithm="RS256", 
                                     issuer="auth.myapp.internal", 
                                     audience="all",
-                                    exp_seconds=900)
+                                    exp_seconds=int(timedelta(minutes=15).total_seconds()))
 
-refreshTokenConfig = JWTDecodeConfig(algorithm="RS256", # HS256
+refreshTokenConfig = JWTDecodeConfig(algorithm="RS256",
                                      issuer="auth.myapp.internal", 
                                      audience="auth",
-                                     exp_seconds=604800)
+                                     exp_seconds=int(timedelta(days=7).total_seconds()))
 
 def decode(encoded_token: str, secret: str, token: type[JWTToken], config: JWTDecodeConfig) -> JWTToken:
     options = {
@@ -123,7 +126,7 @@ def encode(secret: str, token: JWTToken, config: JWTDecodeConfig) -> str:
     payload = token.claims
     payload["aud"] = config.audience
     payload["iss"] = config.issuer
-    payload["exp"] = now + config.exp_seconds # TODO seconds to timestamp
+    payload["exp"] = now + config.exp_seconds
     payload["iat"] = now
     payload["nbf"] = now + config.nbf_seconds
     return jwt.encode(payload, secret, config.algorithm)

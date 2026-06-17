@@ -33,7 +33,7 @@ app.config.update(
 # === Login Manager ===
 login_manager = LoginManager(IdP_url="http://auth_authority", app=app)
 login_manager.login_view = "login"
-login_manager.login_message_category = "info"
+login_manager.refresh_view = "refresh"
 
 # === GWClient ===
 GWClient = GatewayClient()

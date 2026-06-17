@@ -2,6 +2,7 @@ from datetime import timedelta
 from datetime import datetime
 from functools import wraps
 from dataclasses import dataclass
+from jwt_token.token import getUnverifiedClaims
 
 from werkzeug.local import LocalProxy
 from flask import current_app
@@ -41,20 +42,32 @@ def logout_user():
     """
     Logs a user out. (You do not need to pass the actual user.).
     """
-    remove_auth_cookies() # TODO blacklist
-
-    #user_logged_out.send(current_app._get_current_object(), user=user) # not now
+    remove_auth_cookies()
+    IdPClient = current_app.login_manager.IdPClient
+    refresh_token_cookie = request.cookies.get(IdPClient.refreshCookieName)
+    IdPClient.RevokeTokenPair(getUnverifiedClaims(refresh_token_cookie)["jti"])
 
     current_app.login_manager._update_request_context_with_user()
     return True
 
 
-def confirm_login(): # TODO
+def confirm_login(passwd: str) -> bool:
     """
     This sets the current session as fresh.
     """
-    session["_fresh"] = True
-    session["_id"] = current_app.login_manager._session_identifier_generator()
+    IdPClient = current_app.login_manager.IdPClient
+
+    refresh_token = request.cookies.get(IdPClient.refreshCookieName)
+    access_token = request.cookies.get(IdPClient.accessCookieName)
+
+    access_jti = getUnverifiedClaims(access_token)["jti"]
+
+    tokens = IdPClient.freshRefresh(refresh_token=refresh_token, last_access_jti=access_jti, passwd=passwd)
+    if tokens is not None:
+        set_auth_cookies(tokens.access, tokens.refresh)
+        current_app.login_manager._update_request_context_with_user(getUnverifiedClaims(tokens.access))
+        return True
+    return False
 
 
 def login_required(func):

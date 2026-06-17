@@ -60,6 +60,15 @@ class Client:
         response = requests.post(self.baseUrl+"/refresh", json={"refresh_token": refresh_token,
                                                      "last_access_jti": last_access_jti,
                                                      "password": passwd})
+        if response.status_code == 200:
+            json = response.json()
+            return Tokens(refresh=json["refresh_token"], 
+                      access=json["access_token"], 
+                      refresh_exp_seconds=json["refresh_exp_seconds"],
+                      access_exp_seconds=json["access_exp_seconds"],
+                      csrf=json["csrf"])
+        else:
+            return None
 
     def RevokeTokenPair(self, refresh_token):
         requests.get(self.baseUrl+f"/revoke/{refresh_token}")

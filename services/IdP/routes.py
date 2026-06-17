@@ -8,6 +8,9 @@ from . import public_key_pem
 from . import Session
 from . import redis_client
 
+from . import dumy_password
+from . import dumy_password_hash
+
 from jwt_token.token import refreshTokenConfig
 from jwt_token.token import accessTokenConfig
 import jwt_token.token as token
@@ -39,10 +42,11 @@ async def login(post_data: login_POST):
         user = session.execute(select(User).where(User.email == post_data.email)).scalar_one_or_none()
 
         if not user:
-            raise HTTPException(404, "User not found")
+            checkpw(dumy_password.encode("utf-8"), dumy_password_hash)
+            raise HTTPException(401, "Invalid  login credentials")
 
         if not checkpw(post_data.password.encode("utf-8"), user.password_hash):
-            raise HTTPException(401, "Invalid credentials")
+            raise HTTPException(401, "Invalid login credentials")
 
         existing = session.execute(
             select(RefreshToken)
@@ -62,7 +66,7 @@ async def login(post_data: login_POST):
 
         csrf = str(uuid4().hex)
         access_token = encode(secret=private_key_pem,
-                              token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti)}),
+                              token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti), "fresh": True}),
                               config=accessTokenConfig)
 
         refresh_token = encode(secret=private_key_pem,
@@ -98,15 +102,22 @@ async def refresh(post_data: refresh_POST):
             session.add(refresh)
             session.flush()
 
-            #is_password_correct = checkpw(post_data.password.encode("utf-8"), user.password_hash)
-            #if not is_password_correct or post_data.password is None:
-            #    access_token = jwtmanager.encode_jwt(secret=private_key, config=access_jwt_config, fresh=False, jti=str(refresh.last_access_jti))
-            #elif is_password_correct:
-            #    access_token = jwtmanager.encode_jwt(secret=private_key, config=access_jwt_config, fresh=True, jti=str(refresh.last_access_jti))
             csrf = str(uuid4().hex)
-            access_token = encode(secret=private_key_pem, 
-                                  token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti)}), 
-                                  config=accessTokenConfig)
+            if post_data.password is not None:
+                is_password_correct = checkpw(post_data.password.encode("utf-8"), user.password_hash)
+                if is_password_correct:
+                    access_token = encode(secret=private_key_pem, 
+                                          token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti), "fresh": True}), 
+                                          config=accessTokenConfig)
+                else:
+                    access_token = encode(secret=private_key_pem, 
+                                          token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti), "fresh": False}), 
+                                          config=accessTokenConfig)
+            else:
+                access_token = encode(secret=private_key_pem, 
+                                          token=token.AccessToken({"sub": str(user.id), "csrf": csrf, "jti": str(refresh.last_access_jti), "fresh": False}), 
+                                          config=accessTokenConfig)
+            
             refresh_token = encode(secret=private_key_pem,
                               token=token.RefreshToken({"jti": str(refresh.id), "csrf": csrf}),
                               config=refreshTokenConfig)
@@ -122,19 +133,6 @@ async def refresh(post_data: refresh_POST):
             }
         else:
             raise HTTPException(status_code=406, detail="The access jti dosen't match")
-
-# -| users |-
-@app.post("/user")
-def create_user(post_data: create_user_POST):
-    password_bytes = post_data.password.encode("utf-8")
-    password_hash = hashpw(password_bytes, gensalt())
-    if not validators.email(post_data.email):
-        raise HTTPException(status_code=400, detail="email is incorrect")
-    with Session() as session:
-        user = User(username=post_data.username, email=post_data.email, password_hash=password_hash)
-        session.add(user)
-        session.commit()
-        return {"user_id": user.id}
 
 @app.get("/revoke/{refresh_token}")
 def token_pair_revocation(refresh_token: str):
@@ -154,3 +152,16 @@ def check_access_token_for_revocation(access_token: str):
     if value is None:
         raise HTTPException(status_code=404, detail="Access token not found")
     return value
+
+# -| users |-
+@app.post("/user")
+def create_user(post_data: create_user_POST):
+    password_bytes = post_data.password.encode("utf-8")
+    password_hash = hashpw(password_bytes, gensalt())
+    if not validators.email(post_data.email):
+        raise HTTPException(status_code=400, detail="email is incorrect")
+    with Session() as session:
+        user = User(username=post_data.username, email=post_data.email, password_hash=password_hash)
+        session.add(user)
+        session.commit()
+        return {"user_id": user.id}

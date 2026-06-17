@@ -168,15 +168,17 @@ class LoginManager:
                             config=accessTokenConfig)
             if self.IdPClient.CheckIfAccessTokenIsRevoked(accessPayload.jwtId):
                 remove_auth_cookies()
-                self._update_request_context_with_user()
+                return self._update_request_context_with_user()
             return self._update_request_context_with_user(accessPayload.claims)
         except ExpError:
             refresh_token = request.cookies.get(self.IdPClient.refreshCookieName)
             if not refresh_token:
+                remove_auth_cookies()
                 return self._update_request_context_with_user()
             access_jti = getUnverifiedClaims(access_token)["jti"]
             tokens = self.IdPClient.refresh(refresh_token=refresh_token, last_access_jti=access_jti)
             if tokens is None:
+                remove_auth_cookies()
                 return self._update_request_context_with_user()
             else:
                 set_auth_cookies(tokens.access, tokens.refresh)
@@ -194,7 +196,7 @@ class User:
 
     def __init__(self, payload):
         self.id = payload["sub"]
-        #self.fresh = payload["fresh"]
+        self.fresh = payload["fresh"]
     
     @property
     def is_fresh(self):

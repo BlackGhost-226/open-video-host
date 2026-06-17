@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Union
+from typing import Optional
 
 class login_POST(BaseModel):
     email: str
@@ -9,7 +9,7 @@ class login_POST(BaseModel):
 class refresh_POST(BaseModel):
     refresh_token: str
     last_access_jti: str
-    password: Union[str, None] = None
+    password: Optional[str] = None
 
 class create_user_POST(BaseModel):
     username: str

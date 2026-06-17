@@ -1,7 +1,7 @@
 from . import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager, GWClient
 from flask import render_template, redirect, url_for, flash, request
-from login.utils import current_user, login_required, login_user, logout_user
-from .forms import RegistrationForm, LoginForm, VideoUploadForm
+from login.utils import current_user, login_required, login_user, logout_user, confirm_login, fresh_login_required
+from .forms import RegistrationForm, LoginForm, VideoUploadForm, RefreshForm
 from .utils import is_safe_next_url, allowed_file
 import requests
 from werkzeug.utils import secure_filename
@@ -32,8 +32,20 @@ def login():
         return redirect_to
     return render_template('login.html', title='Login', form=form)
 
+@app.route('/refresh', methods=['GET', 'POST'])
+def refresh():
+    next_page = request.args.get('next')
+    if current_user.is_authenticated and current_user.is_fresh:
+        return redirect(url_for('home'))
+    form = RefreshForm()
+    if form.validate_on_submit():
+        redirect_to = redirect(next_page) if next_page and is_safe_next_url(next_page) else redirect(url_for('home'))
+        confirm_login(passwd=form.password.data)
+        return redirect_to
+    return render_template('refresh.html', title='Refresh', form=form)
+
 @app.route("/account")
-@login_required
+@fresh_login_required
 def account():
     return 'test'
 
