@@ -32,9 +32,9 @@ class RefreshForm(FlaskForm):
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
-                           validators=[DataRequired(), Length(min=2, max=20)])
+                           validators=[Length(min=2, max=20)])
     email = StringField('Email',
-                        validators=[DataRequired(), Email()])
+                        validators=[]) # Email()
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
     submit = SubmitField('Update')
 
@@ -49,3 +49,9 @@ class UpdateAccountForm(FlaskForm):
     #        user = User.query.filter_by(email=email.data).first()
     #        if user:
     #            raise ValidationError('That email is taken. Please choose a different one.')
+
+class UpdateAccountPasswoedForm(FlaskForm):
+    password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[DataRequired()])
+    confirm_new_password = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('new_password')])
+    submit = SubmitField('Update')

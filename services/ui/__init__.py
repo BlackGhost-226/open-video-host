@@ -6,6 +6,7 @@ from flask_cors import CORS
 from login.login_manager import LoginManager
 
 from clients.data_gateway import GatewayClient
+from clients.idp import Client
 
 
 # === App Initialization ===
@@ -35,8 +36,11 @@ login_manager = LoginManager(IdP_url="http://auth_authority", app=app)
 login_manager.login_view = "login"
 login_manager.refresh_view = "refresh"
 
-# === GWClient ===
+# === Clients ===
 GWClient = GatewayClient()
+IdPClient = Client(base_url="http://idp", 
+                   expected_issuer="auth.myapp.internal", 
+                   expected_audience="ui")
 
 # === Routes Import ===
 from . import routes

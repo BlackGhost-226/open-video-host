@@ -5,7 +5,7 @@ from flask import flash
 from flask import abort
 from flask import url_for
 
-from jwt_token import Client
+from clients.idp import Client
 
 from .utils import _user_context_processor
 from .utils import _cookieSeter

@@ -1,7 +1,7 @@
-from . import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager, GWClient
+from . import app, ALLOWED_IMG_EXTENSIONS, ALLOWED_VIDEO_EXTENSIONS, login_manager, GWClient, IdPClient
 from flask import render_template, redirect, url_for, flash, request
 from login.utils import current_user, login_required, login_user, logout_user, confirm_login, fresh_login_required
-from .forms import RegistrationForm, LoginForm, VideoUploadForm, RefreshForm
+from .forms import RegistrationForm, LoginForm, VideoUploadForm, RefreshForm, UpdateAccountForm, UpdateAccountPasswoedForm
 from .utils import is_safe_next_url, allowed_file
 import requests
 from werkzeug.utils import secure_filename
@@ -44,10 +44,19 @@ def refresh():
         return redirect_to
     return render_template('refresh.html', title='Refresh', form=form)
 
-@app.route("/account")
+@app.route("/account", methods=['GET', 'POST'])
 @fresh_login_required
 def account():
-    return 'test'
+    info_form = UpdateAccountForm()
+    passwd_form = UpdateAccountPasswoedForm()
+    if info_form.validate_on_submit():
+        IdPClient.changeUserInfo(current_user.id, username=info_form.username.data, email=info_form.email.data)
+    if passwd_form.validate_on_submit():
+        IdPClient.changeUserPassword(current_user.id, current_passwd=passwd_form.password.data, new_passwd=passwd_form.new_password.data)
+    user = IdPClient.getUserInfo(current_user.id)
+    username = user["username"]
+    email = user["email"]
+    return render_template('account.html', title=username, info_form=info_form, user_email=email, passwd_form=passwd_form)
 
 @app.route("/logout")
 def logout():
@@ -105,7 +114,7 @@ def search():
 
 @app.route('/stream/<video_id>/<path:file_path>')
 def stream_file(video_id, file_path):
-    return requests.get(f"http://data_gateway/stream/{video_id}/{file_path}").content # TODO
+    return requests.get(f"http://data_gateway/stream/{video_id}/{file_path}").content
 
 # ===| Home Page |===
 @app.route('/')

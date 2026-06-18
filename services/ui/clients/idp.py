@@ -1,5 +1,7 @@
 import requests
 from dataclasses import dataclass
+from typing import Optional
+
 
 @dataclass
 class Tokens:
@@ -85,3 +87,13 @@ class Client:
                                                   "email": email,
                                                   "password": passwd})
         return response.json()["user_id"]
+    
+    def getUserInfo(self, id):
+        response = requests.get(self.baseUrl+f"/user?id={id}")
+        return response.json()
+    
+    def changeUserInfo(self, id, username: Optional[str] = None, email: Optional[str] = None):
+        response = requests.patch(self.baseUrl+f"/user?id={id}", json={"username": username, "email": email})
+
+    def changeUserPassword(self, id, current_passwd, new_passwd):
+        response = requests.patch(self.baseUrl+f"/user/passwd?id={id}", json={"current_password": current_passwd, "new_password": new_passwd})

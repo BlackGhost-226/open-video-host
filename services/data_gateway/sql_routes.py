@@ -7,10 +7,10 @@ from sqlalchemy import delete
 from .posts import create_row_POST
 from models import Video
 from models import VideoTask
+from models import User
 from typing import Optional
 
 from fastapi import HTTPException
-from fastapi.responses import JSONResponse
 
 tables = {Video.__tablename__: Video, VideoTask.__tablename__: VideoTask}
 allowed_columns = {
