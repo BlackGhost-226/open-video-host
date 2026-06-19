@@ -135,25 +135,6 @@ async def refresh(post_data: refresh_POST):
         else:
             raise HTTPException(status_code=406, detail="The access jti dosen't match")
 
-@app.get("/revoke/{refresh_token}")
-def token_pair_revocation(refresh_token: str):
-    with Session() as session:
-        refresh_token_db = session.execute(select(RefreshToken).where(RefreshToken.id == refresh_token)).scalar_one_or_none()
-        if refresh_token_db is None:
-            raise HTTPException(status_code=404, detail="There is no such refresh token")
-        
-        last_access_jti = refresh_token_db.last_access_jti
-        session.delete(refresh_token_db)
-        session.commit()
-        redis_client.set(str(last_access_jti), "blocked", ex=accessTokenConfig.exp_seconds)
-
-@app.get("/check_revocation/{access_token}")
-def check_access_token_for_revocation(access_token: str):
-    value = redis_client.get(access_token)
-    if value is None:
-        raise HTTPException(status_code=404, detail="Access token not found")
-    return value
-
 # -| users |-
 @app.get("/user")
 def basic_user_info(id: str):
@@ -170,7 +151,18 @@ def basic_user_info(id: str):
         for video_task in user_db.video_tasks:
             video_task_ids.append(str(video_task.id))
 
-        return {"id": user_db.id, "username": user_db.username, "email": user_db.email, "videos": video_ids, "video_tasks": video_task_ids}
+        refresh_token_ids: List[str] = list()
+        for token in user_db.refresh_tokens:
+            refresh_token_ids.append(str(token.id))
+
+        return {
+            "id": user_db.id, 
+            "username": user_db.username, 
+            "email": user_db.email, 
+            "videos": video_ids, 
+            "video_tasks": video_task_ids, 
+            "refresh_tokens": refresh_token_ids
+            }
 
 @app.patch("/user")
 def change_user_info(id: str, patch_data: user_info_edit_PATCH):
@@ -180,7 +172,7 @@ def change_user_info(id: str, patch_data: user_info_edit_PATCH):
             raise HTTPException(status_code=404, detail="User not found")
         
         for column, data in patch_data.model_dump().items():
-            if data is not None:
+            if data is not None and data != "":
                 setattr(user_db, column, data)
         session.commit()
 
@@ -207,3 +199,36 @@ def create_user(post_data: create_user_POST):
         session.add(user)
         session.commit()
         return {"user_id": user.id}
+
+# -| tokens |-
+@app.get("/revoke/{refresh_token}")
+def token_pair_revocation(refresh_token: str):
+    with Session() as session:
+        refresh_token_db = session.execute(select(RefreshToken).where(RefreshToken.id == refresh_token)).scalar_one_or_none()
+        if refresh_token_db is None:
+            raise HTTPException(status_code=404, detail="There is no such refresh token")
+        
+        last_access_jti = refresh_token_db.last_access_jti
+        session.delete(refresh_token_db)
+        session.commit()
+        redis_client.set(str(last_access_jti), "blocked", ex=accessTokenConfig.exp_seconds)
+
+@app.get("/check_revocation/{access_token}")
+def check_access_token_for_revocation(access_token: str):
+    value = redis_client.get(access_token)
+    if value is None:
+        raise HTTPException(status_code=404, detail="Access token not found")
+    return value
+
+@app.get("/refresh_token/{refresh_token}")
+def basic_refresh_token_info(refresh_token: str):
+    with Session() as session:
+        refresh_db = session.execute(select(RefreshToken).where(RefreshToken.id == refresh_token)).scalar_one_or_none()
+        if refresh_db is None:
+            raise HTTPException(status_code=404, detail="Refresh token not found")
+        return {
+            "id": refresh_db.id,
+            "device_agent": refresh_db.device_agent,
+            "expiration_time": refresh_db.expiration_time,
+            "user_id": refresh_db.user_id
+                }

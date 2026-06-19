@@ -97,3 +97,7 @@ class Client:
 
     def changeUserPassword(self, id, current_passwd, new_passwd):
         response = requests.patch(self.baseUrl+f"/user/passwd?id={id}", json={"current_password": current_passwd, "new_password": new_passwd})
+    
+    def getRefreshTokenInfo(self, id):
+        response = requests.get(self.baseUrl+f"/refresh_token/{id}")
+        return response.json()

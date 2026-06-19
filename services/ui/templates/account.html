@@ -4,8 +4,8 @@
       <div class="media">
         <img class="rounded-circle account-img" src="{{ image_file }}">
         <div class="media-body">
-          <h2 class="account-heading">{{ title }}</h2>
-          <p class="text-secondary">{{ user_email }}</p>
+          <h2 class="account-heading">{{ user["username"] }}</h2>
+          <p class="text-secondary">{{ user["email"] }}</p>
         </div>
       </div>
         <form method="POST" action="" enctype="multipart/form-data">
@@ -102,5 +102,26 @@
                 {{ passwd_form.submit(class="btn btn-outline-info") }}
             </div>
         </form>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>User Agent</th>
+                    <th>Expiration Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for token in user["refresh_tokens"] %}
+                <tr>
+                    <td>{{ token["device_agent"] }}</td>
+                    <td>{{ token["expiration_time"] }}</td>
+                    <td><button 
+                        hx-get="/account/revoke?id={{ token["id"] }}" 
+                        hx-trigger="click" 
+                        hx-swap="none">Revoke</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 {% endblock content %}

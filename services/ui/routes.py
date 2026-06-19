@@ -4,11 +4,10 @@ from login.utils import current_user, login_required, login_user, logout_user, c
 from .forms import RegistrationForm, LoginForm, VideoUploadForm, RefreshForm, UpdateAccountForm, UpdateAccountPasswoedForm
 from .utils import is_safe_next_url, allowed_file
 import requests
-from werkzeug.utils import secure_filename
 import uuid
 
 
-# ===| Users |===
+# ===| Users Auth |===
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -44,6 +43,12 @@ def refresh():
         return redirect_to
     return render_template('refresh.html', title='Refresh', form=form)
 
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
+
+# ===| User Account |===
 @app.route("/account", methods=['GET', 'POST'])
 @fresh_login_required
 def account():
@@ -54,14 +59,22 @@ def account():
     if passwd_form.validate_on_submit():
         IdPClient.changeUserPassword(current_user.id, current_passwd=passwd_form.password.data, new_passwd=passwd_form.new_password.data)
     user = IdPClient.getUserInfo(current_user.id)
-    username = user["username"]
-    email = user["email"]
-    return render_template('account.html', title=username, info_form=info_form, user_email=email, passwd_form=passwd_form)
 
-@app.route("/logout")
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
+    refresh_tokens = list()
+    for token_id in user["refresh_tokens"]:
+        refresh_tokens.append(IdPClient.getRefreshTokenInfo(token_id))
+    user["refresh_tokens"] = refresh_tokens
+
+    return render_template('account.html', title=user["username"], info_form=info_form, passwd_form=passwd_form, user=user)
+
+@app.route("/account/revoke")
+@fresh_login_required
+def revoke_token_pair():
+    token_id = request.args.get("id")
+    refresh_info = IdPClient.getRefreshTokenInfo(token_id)
+    if refresh_info["user_id"] == current_user.id:
+        IdPClient.RevokeTokenPair(token_id)
+    return redirect(url_for('account'))#.headers.add_header("HX-Refresh", True)
 
 # ===| Videos |===
 @app.route('/upload', methods=['GET', 'POST'])
@@ -110,7 +123,7 @@ def video():
 @app.route('/search')
 def search():
     #query = request.args.get('q')
-    return 'test'
+    return 'In Dev'
 
 @app.route('/stream/<video_id>/<path:file_path>')
 def stream_file(video_id, file_path):
@@ -126,4 +139,4 @@ def feed():
     offset = int(request.args.get('offset', 0))
     items = GWClient.get_row_from_db(table="videos")
     has_more = offset+21 < len(items)
-    return render_template("home_items.html", offset=offset+21, items=items, has_more=has_more)
+    return render_template("index_items.html", offset=offset+21, items=items, has_more=has_more)

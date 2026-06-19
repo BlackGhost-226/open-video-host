@@ -32,7 +32,7 @@ class RefreshForm(FlaskForm):
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username',
-                           validators=[Length(min=2, max=20)])
+                           validators=[]) # Length(min=2, max=20)
     email = StringField('Email',
                         validators=[]) # Email()
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
