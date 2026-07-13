@@ -1,0 +1,30 @@
+{
+    "download": [
+        {"/video": "vid"}, 
+        {"/thumbnail": "img"}
+    ],
+    "processing": [
+        {"compress_file": ["V:{vid}", "video", null]}, 
+        {"compress_file": ["V:{img}", "image", null]}, 
+        {"convert_to_hls": ["V:{vid}", null, "hls"]}, 
+        {"convert_to_dash": ["V:{vid}", null, "dash"]}, 
+        {"set_scale": ["V:{img}", "thumbnail", null]}
+    ],
+    "sql": [
+        {"new": [
+            "videos", 
+            {
+                "title": "V:{title}", 
+                "description": "V:{description}", 
+                "author_user_id": "V:{author_id}"
+            },
+            "video"
+            ]
+        }
+    ],
+    "upload": [
+        {"V:{hls}": ["streams", "V:{video.id}/hls", "application/x-mpegURL"]}, 
+        {"V:{dash}": ["streams", "V:{video.id}/dash", "application/dash+xml"]}, 
+        {"V:{img}": ["streams", "V:{video.id}/thumbnail.jpg", "image/jpeg"]}
+    ]
+}

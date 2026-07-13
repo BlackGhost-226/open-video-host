@@ -105,10 +105,25 @@ def upload():
         if has_img:
             GWClient.upload_file_to_minio(file=img, object_name=f"{upload_id}/thumbnail", bucket="uploads", content_type=img.mimetype)
         
-        requests.post(f"http://worker_manager/new-upload", json={"upload_id": str(upload_id),
-                                                                 "video_size": form.video.data.content_length,
-                                                                 "title": title,
-                                                                 "description": "",
+        if has_img:
+            requests.post(f"http://worker_manager/vid_with_img", json={"upload_id": str(upload_id),
+                                                                 "size": form.video.data.content_length,
+                                                                 "init_vars": 
+                                                                 {  
+                                                                    "title": title,
+                                                                    "description": "",
+                                                                    "author_id": current_user.id
+                                                                    },
+                                                                 "user_id": current_user.id})
+        else:
+            requests.post(f"http://worker_manager/vid_without_img", json={"upload_id": str(upload_id),
+                                                                 "size": form.video.data.content_length,
+                                                                 "init_vars": 
+                                                                 {
+                                                                    "title": title,
+                                                                    "description": "",
+                                                                    "author_id": current_user.id
+                                                                    },
                                                                  "user_id": current_user.id})
 
         flash('Video is processing!', 'success')

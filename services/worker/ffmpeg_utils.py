@@ -1,19 +1,21 @@
 import subprocess
 import os
 from typing import Callable
+from utils import working_dir
 
 
-def compress_file(file_path: str, compress_func: Callable):
-    os.rename(file_path, file_path+".temp")
-    com = compress_func(file_path+".temp", file_path)
+def compress_file(input_path: str, type: str):
+    compress_func: Callable = compress_video if type == "video" else compress_img
+    os.rename(input_path, input_path+".temp")
+    com = compress_func(input_path+".temp", input_path)
     if not com:
         return False
-    os.remove(file_path+".temp")
-    return True
+    os.remove(input_path+".temp")
+    return com
 
-
-def convert_to_hls(input_path: str, output_dir: str):
+def convert_to_hls(input_path: str, type: str):
     """Convert video to HLS format using FFmpeg"""
+    output_dir = os.path.join(working_dir, 'hls')
     os.makedirs(output_dir, exist_ok=True)
 
     hls_playlist = os.path.join(output_dir, 'playlist.m3u8')
@@ -33,13 +35,14 @@ def convert_to_hls(input_path: str, output_dir: str):
     try:
         subprocess.run(hls_cmd, check=True)
         #logger.info(f"HLS conversion completed for {input_path}")
-        return True
+        return output_dir
     except subprocess.CalledProcessError as e:
         #logger.error(f"HLS conversion failed: {e}")
         return False
 
-def convert_to_dash(input_path: str, output_dir: str):
+def convert_to_dash(input_path: str, type: str):
     """Convert video to DASH format using FFmpeg"""
+    output_dir = os.path.join(working_dir, 'dash')
     os.makedirs(output_dir, exist_ok=True)
 
     dash_playlist = os.path.join(output_dir, 'manifest.mpd')
@@ -64,7 +67,7 @@ def convert_to_dash(input_path: str, output_dir: str):
     try:
         subprocess.run(dash_cmd, check=True)
         #logger.info(f"DASH conversion completed for {input_path}")
-        return True
+        return output_dir
     except subprocess.CalledProcessError as e:
         #logger.error(f"DASH conversion failed: {e}")
         return False
@@ -99,7 +102,8 @@ def compress_img(input_path: str, output_path: str):
         #logger.error(f"compression failed: {e}")
         return False
 
-def get_jpg(input_path: str, output_path: str):
+def get_jpg(input_path: str, type: str):
+    output_path = os.path.join(working_dir, f"{input_path.split("/")[-1].split(".")[0]}.jpg")
     jpg_cmd = ['ffmpeg',
                '-ss', '00:00:02',
                '-i', input_path,
@@ -114,7 +118,10 @@ def get_jpg(input_path: str, output_path: str):
     try:
         subprocess.run(jpg_cmd, check=True)
         #logger.info(f"{output_path} had been extracted")
-        return True
+        return output_path
     except subprocess.CalledProcessError as e:
         #logger.error(f"extraction failed: {e}")
         return False
+
+def set_scale(input_path: str, type: str):
+    pass

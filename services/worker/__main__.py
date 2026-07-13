@@ -1,88 +1,70 @@
-import pika
 import os
 import shutil
-import ffmpeg_utils
-from ffmpeg_utils import compress_file
-from json import loads
-from clients.data_gateway import GatewayClient
+from typing import Callable
+from types import ModuleType
 
 from pika.spec import BasicProperties
 from pika.spec import Basic
 from pika.channel import Channel
 
+from utils import working_dir, GWClient, channel
+from utils.var_utils import VarUtils
 
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='rabbitmq'))
-channel = connection.channel()
-channel.queue_declare(queue='task_queue', 
-                      durable=True, 
-                      arguments={'x-max-priority': 10})
-channel.basic_qos(prefetch_count=1)
-
-working_dir = "working"
-working_dir = os.path.join(".", working_dir)
-
-GWClient = GatewayClient()
-
+ffmpeg_utils: ModuleType = __import__('ffmpeg_utils')
 
 def process_video(ch: Channel, method: Basic.Return, properties: BasicProperties, body: bytes):
     row = GWClient.get_row_from_db("video_tasks", id=body.decode())[0]
     upload_id = row.get("id")
-    title = row.get("title")
-    description = row.get("description")
-    author_id = row.get("author_user_id")
+    instructions = row.get("instructions")
+    vars = VarUtils(row.get("init_vars"))
     os.makedirs(working_dir, exist_ok=True)
 
-    response = GWClient.download_file_from_minio(object_name=f"{upload_id}/video", bucket="uploads")
-    video_path = os.path.join(working_dir, "video."+response[1])
-    GWClient.write_from_stream(response[0], video_path)
+    download_instructions: dict = instructions["download"]
+    for command in download_instructions:
+        for download_minio_path, var_name in command.items():
+            response = GWClient.download_file_from_minio(object_name=f"{upload_id}{download_minio_path}", bucket="uploads")
+            file_path = os.path.join(working_dir, f"{download_minio_path}.{response[1]}")
+            GWClient.write_from_stream(response[0], file_path)
+            if var_name is not None:
+                vars[var_name] = file_path
 
-    response = GWClient.download_file_from_minio(object_name=f"{upload_id}/thumbnail", bucket="uploads")
-    has_img = response[0].status_code == 200
-    if has_img:
-        img_path = os.path.join(working_dir, "thumbnail."+response[1])
-        GWClient.write_from_stream(response[0], img_path)
+    processing_instructions: dict = instructions["processing"]
+    for command in processing_instructions:
+        for func_name, args in command.items():
+            callable: Callable = getattr(ffmpeg_utils, func_name)
+            var_args: list = vars.get_var_args(args)
+            output_path = callable(*var_args[:-1])
+            if var_args[-1] is not None:
+                vars[var_args[-1]] = output_path
     
-    #logger.info(f"Video file uploaded: {video_path}")
+    sql_instructions: dict = instructions["sql"]
+    for command in sql_instructions:
+        for query_type, args in command.items():
+            callable: Callable = GWClient.add_row_to_db if query_type == "new" else GWClient.get_row_from_db
+            var_args: list = vars.get_var_args(args)
+            output_row = callable(table=var_args[0], **var_args[1])[0]
+            if var_args[-1] is not None:
+                vars[var_args[-1]] = output_row
 
-    # Create directories for each format
-    hls_output_dir = os.path.join(working_dir, 'hls')
-    dash_output_dir = os.path.join(working_dir, 'dash')
-    os.makedirs(hls_output_dir, exist_ok=True)
-    os.makedirs(dash_output_dir, exist_ok=True)
-
-    compress_file(video_path, ffmpeg_utils.compress_video)
-        
-    if has_img:
-        compress_file(img_path, ffmpeg_utils.compress_img)
-        shutil.move(img_path, working_dir+"/thumbnail.jpg")
-    else:
-        ffmpeg_utils.get_jpg(video_path, working_dir+"/thumbnail.jpg")
-
-    ffmpeg_utils.convert_to_hls(video_path, hls_output_dir)
-    ffmpeg_utils.convert_to_dash(video_path, dash_output_dir)
-
-
-    # --| adding video to db |--
-    video = GWClient.add_row_to_db(table="videos", title=title, description=description, author_user_id=author_id)[0]
-    video_id = video.id
-
-    # --| uploads files |--
-    # hls
-    for filename in os.listdir(hls_output_dir):
-        filePath = os.path.join(hls_output_dir, filename)
-        with open(filePath, "rb") as fileData:
-            GWClient.upload_file_to_minio(fileData, f"{video_id}/hls/{filename}", "streams", content_type="application/x-mpegURL")
-    
-    # dash
-    for filename in os.listdir(dash_output_dir):
-        filePath = os.path.join(dash_output_dir, filename)
-        with open(filePath, "rb") as fileData:
-            GWClient.upload_file_to_minio(fileData, f"{video_id}/dash/{filename}", "streams", content_type="application/dash+xml")
-    
-    # imgage(thumbnail)
-    with open(working_dir+"/thumbnail.jpg", "rb") as imgData:
-        GWClient.upload_file_to_minio(imgData, f"{video_id}/thumbnail.jpg", "streams", content_type="image/jpeg")
+    upload_instructions: dict = instructions["upload"]
+    for command in upload_instructions:
+        for file_path, bucket_minioPath_contentType in command.items():
+            file_path = vars.read_variable(file_path)
+            bucket_minioPath_contentType = vars.get_var_args(bucket_minioPath_contentType)
+            if os.path.isdir(file_path):
+                for filename in os.listdir(file_path):
+                    filePath = os.path.join(file_path, filename)
+                    with open(filePath, "rb") as fileData:
+                        GWClient.upload_file_to_minio(fileData, 
+                                                      bucket_minioPath_contentType[1]+f"/{filename}", 
+                                                      bucket_minioPath_contentType[0], 
+                                                      content_type=bucket_minioPath_contentType[2])
+            else:
+                with open(file_path, "rb") as fileData:
+                    GWClient.upload_file_to_minio(fileData, 
+                                                bucket_minioPath_contentType[1], 
+                                                bucket_minioPath_contentType[0], 
+                                                content_type=bucket_minioPath_contentType[2])
     
     # --| remove |--
     GWClient.delete_file_from_minio(upload_id, "uploads")

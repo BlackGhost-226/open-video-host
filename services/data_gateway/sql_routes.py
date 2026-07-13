@@ -7,7 +7,6 @@ from sqlalchemy import delete
 from .posts import create_row_POST
 from models import Video
 from models import VideoTask
-from models import User
 from typing import Optional
 
 from fastapi import HTTPException
@@ -22,8 +21,8 @@ allowed_columns = {
     ],
     VideoTask.__tablename__: [
         VideoTask.__table__.c.id,
-        VideoTask.__table__.c.title,
-        VideoTask.__table__.c.description,
+        VideoTask.__table__.c.init_vars,
+        VideoTask.__table__.c.instructions,
         VideoTask.__table__.c.author_user_id
     ]
 }

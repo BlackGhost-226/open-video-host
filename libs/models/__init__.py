@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 from sqlalchemy import String
-from sqlalchemy import Boolean
+from sqlalchemy import JSON
 from sqlalchemy import ForeignKey
 from sqlalchemy import LargeBinary
 from sqlalchemy.orm import DeclarativeBase
@@ -49,8 +49,8 @@ class Video(Base):
 class VideoTask(Base):
     __tablename__ = "video_tasks"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4) # upload_id
-    title: Mapped[str] = mapped_column(String(100))
-    description: Mapped[Optional[str]] = mapped_column(String(5000))
+    instructions: Mapped[dict] = mapped_column(JSON())
+    init_vars: Mapped[dict] = mapped_column(JSON())
     author_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     author: Mapped["User"] = relationship(back_populates="video_tasks")
 

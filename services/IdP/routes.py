@@ -44,7 +44,7 @@ async def login(post_data: login_POST):
 
         if not user:
             checkpw(dumy_password.encode("utf-8"), dumy_password_hash)
-            raise HTTPException(401, "Invalid  login credentials")
+            raise HTTPException(401, "Invalid login credentials")
 
         if not checkpw(post_data.password.encode("utf-8"), user.password_hash):
             raise HTTPException(401, "Invalid login credentials")
