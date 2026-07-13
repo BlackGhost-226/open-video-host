@@ -13,7 +13,6 @@ channel.queue_declare(queue='task_queue',
                       arguments={'x-max-priority': 10})
 channel.basic_qos(prefetch_count=1)
 
-working_dir = "working"
-working_dir = os.path.join(".", working_dir)
+working_dir = "/app/working"
 
 GWClient = GatewayClient()

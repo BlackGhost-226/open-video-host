@@ -23,7 +23,7 @@ def process_video(ch: Channel, method: Basic.Return, properties: BasicProperties
     for command in download_instructions:
         for download_minio_path, var_name in command.items():
             response = GWClient.download_file_from_minio(object_name=f"{upload_id}{download_minio_path}", bucket="uploads")
-            file_path = os.path.join(working_dir, f"{download_minio_path}.{response[1]}")
+            file_path = os.path.join(working_dir, f"{download_minio_path.lstrip('/')}.{response[1]}")
             GWClient.write_from_stream(response[0], file_path)
             if var_name is not None:
                 vars[var_name] = file_path

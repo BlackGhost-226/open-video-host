@@ -11,6 +11,7 @@ class VarUtils:
     def read_variable(self, string: str) -> str:
         if "V:{" not in string:
             return string
+        
         start_i: int = int()
         end_i: int = int()
         i_sequence_updated: int = int()
@@ -30,6 +31,7 @@ class VarUtils:
             elif i_sequence_updated+1 != i and sequence != "V:{":
                 i_sequence_updated = i
                 sequence = str()
+
         full_var_string: str = str()
         for i in range(len(var_i_s)):
             var_name = string[var_i_s[i][0]:var_i_s[i][1]]
@@ -39,13 +41,15 @@ class VarUtils:
             var_value = self.vars[var_name]
             for arg in var_args:
                 var_value = getattr(var_value, arg)
-            if i == 0 and len(var_i_s)-1 == i:
+            var_value = str(var_value)
+            
+            if i == 0 and len(var_i_s)-1 == i: # first, and last
                 full_var_string = full_var_string + string[:var_i_s[i][0]-3] + var_value + string[var_i_s[i][1]+1:]
-            elif i != 0 and len(var_i_s)-1 == i:
+            elif i != 0 and len(var_i_s)-1 == i: # not first, and last
                 full_var_string = full_var_string + var_value + string[var_i_s[i][1]+1:]
-            elif i == 0 and len(var_i_s)-1 != i:
+            elif i == 0 and len(var_i_s)-1 != i: # first, and not last
                 full_var_string = full_var_string + string[:var_i_s[i][0]-3] + var_value + string[var_i_s[i][1]+1:var_i_s[i+1][0]-3]
-            elif i != 0 and len(var_i_s)-1 != i:
+            elif i != 0 and len(var_i_s)-1 != i: # not first, and not last
                 full_var_string = full_var_string + var_value + string[var_i_s[i][1]+1:var_i_s[i+1][0]-3]
         return full_var_string
 

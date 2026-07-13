@@ -5,9 +5,9 @@
     "processing": [
         {"compress_file": ["V:{vid}", "video", null]}, 
         {"get_jpg": ["V:{vid}", null, "img"]}, 
+        {"set_scale": ["V:{img}", "thumbnail", null]}, 
         {"convert_to_hls": ["V:{vid}", null, "hls"]}, 
-        {"convert_to_dash": ["V:{vid}", null, "dash"]}, 
-        {"set_scale": ["V:{img}", "thumbnail", null]}
+        {"convert_to_dash": ["V:{vid}", null, "dash"]}
     ],
     "sql": [
         {"new": [

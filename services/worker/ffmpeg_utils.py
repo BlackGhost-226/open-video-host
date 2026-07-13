@@ -85,13 +85,9 @@ def compress_video(input_path: str, output_path: str):
         return False
 
 def compress_img(input_path: str, output_path: str):
-    compress_cmd = ['ffmpeg',
+    compress_cmd = ['ffmpeg', '-y',
                     '-i', input_path,
                     '-q:v', '2',
-                    '-vf',
-                    "scale=if(gte(a\\,16/9)\\,iw\\,-1):if(lt(a\\,16/9)\\,-1\\,ih),"
-                    "pad=ceil(max(iw\\,ih*16/9)/2)*2:ceil(max(ih\\,iw*9/16)/2)*2:"
-                    "(ow-iw)/2:(oh-ih)/2:black",
                     output_path]
 
     try:
@@ -104,17 +100,12 @@ def compress_img(input_path: str, output_path: str):
 
 def get_jpg(input_path: str, type: str):
     output_path = os.path.join(working_dir, f"{input_path.split("/")[-1].split(".")[0]}.jpg")
-    jpg_cmd = ['ffmpeg',
+    jpg_cmd = ['ffmpeg', '-y',
                '-ss', '00:00:02',
                '-i', input_path,
                '-vframes', '1',
                '-q:v', '2',
-               '-vf',
-                "scale=if(gte(a\\,16/9)\\,iw\\,-1):if(lt(a\\,16/9)\\,-1\\,ih),"
-                "pad=ceil(max(iw\\,ih*16/9)/2)*2:ceil(max(ih\\,iw*9/16)/2)*2:"
-                "(ow-iw)/2:(oh-ih)/2:black",
                output_path]
-
     try:
         subprocess.run(jpg_cmd, check=True)
         #logger.info(f"{output_path} had been extracted")
@@ -123,5 +114,36 @@ def get_jpg(input_path: str, type: str):
         #logger.error(f"extraction failed: {e}")
         return False
 
+def scaler(input_path: str, output_path: str, scale: str):
+    scale_cmd = ['ffmpeg',
+                    '-i', input_path,
+                    '-vf', scale,
+                    output_path]
+
+    try:
+        subprocess.run(scale_cmd, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(e)
+        raise
+        return False
+
 def set_scale(input_path: str, type: str):
-    pass
+    scale: str = str()
+    if type == "thumbnail":
+        scale = (
+            "scale=1920:1080:force_original_aspect_ratio=decrease,"
+            "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black"
+        )
+    elif type == "profile":
+        scale = "crop='ih:ih',scale=720:720,setsar=1:1"
+
+    if scale == "":
+        return False
+    
+    os.rename(input_path, input_path+".temp")
+    scaled = scaler(input_path+".temp", input_path, scale)
+    if not scaled:
+        return False
+    os.remove(input_path+".temp")
+    return scaled
