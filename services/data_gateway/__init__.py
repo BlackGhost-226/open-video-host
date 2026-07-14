@@ -18,6 +18,7 @@ minio_client = Minio(
 
 UPLOAD_BUCKET = "uploads"
 OUTPUT_BUCKET = "streams"
+PROFILE_BUCKET = "profiles"
 MIME_TO_EXT = {
     "video/mp4": "mp4",
     "video/quicktime": "mov",
@@ -35,6 +36,7 @@ def ensure_bucket(bucket: str):
 
 ensure_bucket(UPLOAD_BUCKET)
 ensure_bucket(OUTPUT_BUCKET)
+ensure_bucket(PROFILE_BUCKET)
 
 # --| postgresql |--
 engine = create_engine(getenv("DATABASE_URI"))

@@ -147,3 +147,17 @@ def set_scale(input_path: str, type: str):
         return False
     os.remove(input_path+".temp")
     return scaled
+
+def change_format(input_path: str, type: str):
+    output_path = os.path.join(working_dir, f"{input_path.split("/")[-1].split(".")[0]}.{type}")
+    os.rename(input_path, input_path+".temp")
+
+    format_cmd = ['ffmpeg', '-y',
+               '-i', input_path+".temp",
+               output_path]
+    try:
+        subprocess.run(format_cmd, check=True)
+        os.remove(input_path+".temp")
+        return output_path
+    except subprocess.CalledProcessError as e:
+        return False

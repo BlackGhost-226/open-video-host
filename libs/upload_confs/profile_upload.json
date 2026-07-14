@@ -1,0 +1,14 @@
+{
+    "download": [
+        {"/profile": "img"}
+    ],
+    "processing": [
+        {"compress_file": ["V:{img}", "image", null]}, 
+        {"change_format": ["V:{img}", "jpg", null]},
+        {"set_scale": ["V:{img}", "profile", null]}
+    ],
+    "sql": [],
+    "upload": [
+        {"V:{img}": ["profiles", "V:{user_id}.jpg", "image/jpeg"]}
+    ]
+}

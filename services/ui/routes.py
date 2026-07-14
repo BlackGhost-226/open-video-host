@@ -56,6 +56,13 @@ def account():
     passwd_form = UpdateAccountPasswoedForm()
     if info_form.validate_on_submit():
         IdPClient.changeUserInfo(current_user.id, username=info_form.username.data, email=info_form.email.data)
+        if info_form.picture is not None:
+            upload_id = uuid.uuid4()
+            GWClient.upload_file_to_minio(file=info_form.picture.data, object_name=f"{upload_id}/profile", bucket="uploads", content_type=info_form.picture.data.mimetype)
+            requests.post(f"http://worker_manager/profile", json={"upload_id": str(upload_id),
+                                                                       "size": info_form.picture.data.content_length,
+                                                                       "init_vars": {"user_id": current_user.id},
+                                                                       "user_id": current_user.id})
     if passwd_form.validate_on_submit():
         IdPClient.changeUserPassword(current_user.id, current_passwd=passwd_form.password.data, new_passwd=passwd_form.new_password.data)
     user = IdPClient.getUserInfo(current_user.id)
@@ -74,7 +81,7 @@ def revoke_token_pair():
     refresh_info = IdPClient.getRefreshTokenInfo(token_id)
     if refresh_info["user_id"] == current_user.id:
         IdPClient.RevokeTokenPair(token_id)
-    return redirect(url_for('account'))#.headers.add_header("HX-Refresh", True)
+    return redirect(url_for('account'))
 
 # ===| Videos |===
 @app.route('/upload', methods=['GET', 'POST'])
@@ -140,9 +147,14 @@ def search():
     #query = request.args.get('q')
     return 'In Dev'
 
+# ===| Media |===
 @app.route('/stream/<video_id>/<path:file_path>')
 def stream_file(video_id, file_path):
     return requests.get(f"http://data_gateway/stream/{video_id}/{file_path}").content
+
+@app.route('/profile/<user_id>')
+def profile_img(user_id):
+    return requests.get(f"http://data_gateway/profile/{user_id}").content
 
 # ===| Home Page |===
 @app.route('/')

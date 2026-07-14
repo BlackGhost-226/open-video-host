@@ -2,6 +2,7 @@ from . import app
 from . import minio_client
 from . import UPLOAD_BUCKET
 from . import OUTPUT_BUCKET
+from . import PROFILE_BUCKET
 from . import MIME_TO_EXT
 
 from fastapi import HTTPException
@@ -62,7 +63,12 @@ def delete_object(bucket: str, object_name: str):
 @app.get("/stream/{video_id}/{file_path:path}")
 def stream(video_id: str, file_path: str):
     """
-    The same as /minio/download but without permissions and works only with 'OUTPUT_BUCKET'
+    The same as /minio/download but without permissions and works only with 'OUTPUT_BUCKET' # TODO permissions
     """
     respones = minio_client.get_object(OUTPUT_BUCKET, f"{video_id}/{file_path}")
+    return StreamingResponse(respones)
+
+@app.get("/profile/{user_id}")
+def profile_img(user_id: str):
+    respones = minio_client.get_object(PROFILE_BUCKET, f"{user_id}.jpg")
     return StreamingResponse(respones)

@@ -77,3 +77,25 @@ def new_job(post_data: new_job_POST):
             priority=size_to_priority(post_data.size)
         )
     )
+
+@app.post('/profile')
+def new_job(post_data: new_job_POST):
+    with open("profile_upload.json", mode="r") as file:
+        instructions = json.load(file)
+        
+    GWClient.add_row_to_db("video_tasks", 
+                           id=post_data.upload_id, 
+                           instructions=instructions,
+                           init_vars=post_data.init_vars,
+                           author_user_id=post_data.user_id
+                            )
+    
+    channel.basic_publish(
+        exchange='',
+        routing_key='task_queue',
+        body=post_data.upload_id,
+        properties=BasicProperties(
+            delivery_mode=DeliveryMode.Persistent,
+            priority=size_to_priority(post_data.size)
+        )
+    )
