@@ -49,6 +49,21 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
   
+  mongo:
+      image: mongo
+      restart: always
+      logging:
+          options:
+              max-size: 1g
+      environment:
+          - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+          - MONGO_INITDB_ROOT_PASSWORD=bdung
+      volumes:
+      - ./data/mongo/init:/docker-entrypoint-initdb.d
+      - ./data/mongo/db:/data/db
+      - ./data/mongo/configdb:/data/configdb
+      - ./data/mongo/mongot:/data/mongot
+
   ui:
     image: ui
     build:
