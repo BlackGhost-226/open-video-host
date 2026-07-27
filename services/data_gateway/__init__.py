@@ -1,20 +1,12 @@
-import os
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from minio import Minio
-from redis import Redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from pymongo import MongoClient
 from os import getenv
+from urllib.parse import urlsplit
 
-app = FastAPI()
-
-# --| minio |--
-minio_client = Minio(
-    os.getenv("MINIO_ENDPOINT"),
-    access_key=os.getenv("MINIO_ROOT_USER"),
-    secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
-    secure=False
-)
 
 UPLOAD_BUCKET = "uploads"
 OUTPUT_BUCKET = "streams"
@@ -29,24 +21,34 @@ MIME_TO_EXT = {
     "image/gif": "gif"
 }
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.mongodb_client = MongoClient(getenv("VECTOR_URI"))
+    app.database = app.mongodb_client[getenv("VECTOR_DB_NAME")]
 
-def ensure_bucket(bucket: str):
-    if not minio_client.bucket_exists(bucket):
-        minio_client.make_bucket(bucket)
+    netloc: dict[str, str] = urlsplit(getenv("S3_URI")).netloc.split("@")
+    app.minio_client = Minio(netloc[-1], access_key=netloc[0].split(":")[0], secret_key=netloc[0].split(":")[-1], secure=False)
 
-ensure_bucket(UPLOAD_BUCKET)
-ensure_bucket(OUTPUT_BUCKET)
-ensure_bucket(PROFILE_BUCKET)
+    def ensure_bucket(bucket: str):
+        if not app.minio_client.bucket_exists(bucket):
+            app.minio_client.make_bucket(bucket)
 
-# --| postgresql |--
-engine = create_engine(getenv("DATABASE_URI"))
-connection = engine.connect()
-Session = sessionmaker(engine)
+    ensure_bucket(UPLOAD_BUCKET)
+    ensure_bucket(OUTPUT_BUCKET)
+    ensure_bucket(PROFILE_BUCKET)
 
-# --| Redis |--
-redis_client = Redis(host="redis", port=6379, decode_responses=True)
+    engine = create_engine(getenv("DATABASE_URI"))
+    connection = engine.connect()
+    app.Session = sessionmaker(engine)
+
+    yield
+
+    app.mongodb_client.close()
+    connection.close()
+
+app = FastAPI(lifespan=lifespan)
 
 # --| routes |--
 from . import minio_routes
 from . import sql_routes
-#from . import redis_routes
+#from . import vector_routes

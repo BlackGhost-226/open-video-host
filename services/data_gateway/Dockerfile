@@ -11,7 +11,7 @@ WORKDIR /app
 
 EXPOSE 80
 
-RUN pip install --no-cache-dir fastapi minio uvicorn sqlalchemy psycopg2-binary redis
+RUN pip install --no-cache-dir fastapi minio uvicorn sqlalchemy psycopg2-binary pymongo
 
 COPY ./services/data_gateway ./app
 

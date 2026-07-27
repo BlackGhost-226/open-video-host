@@ -1,4 +1,9 @@
 services:
+  adminer:
+    image: adminer:latest
+    ports: 
+      - 98:8080
+  
   redis: 
     image: redis:7-alpine
     container_name: redis
@@ -6,6 +11,11 @@ services:
       - ./data/redis:/data
     command: redis-server --appendonly yes
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 15s
+      retries: 3
 
   postgresql_db:
     image: postgres:16.3
@@ -16,6 +26,11 @@ services:
       POSTGRES_DB: test
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "test"]
+      interval: 15s
+      timeout: 15s
+      retries: 3
   
   rabbitmq:
     image: rabbitmq:management
@@ -31,11 +46,6 @@ services:
       interval: 15s
       timeout: 15s
       retries: 3
- 
-  adminer:
-        image: adminer:latest
-        ports: 
-          - 98:8080
 
   minio:
     image: minio/minio
@@ -48,6 +58,11 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f http://minio:9001/minio/health/live || exit 1"]
+      interval: 15s
+      timeout: 15s
+      retries: 3
   
   mongo:
       image: mongo
@@ -63,6 +78,11 @@ services:
       - ./data/mongo/db:/data/db
       - ./data/mongo/configdb:/data/configdb
       - ./data/mongo/mongot:/data/mongot
+      healthcheck:
+        test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+        interval: 15s
+        timeout: 15s
+        retries: 3
 
   ui:
     image: ui
@@ -83,12 +103,19 @@ services:
       context: .
       dockerfile: services/data_gateway/Dockerfile
     environment:
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
+      S3_URI: minio://minio:minio123@minio:9000/
       DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
+      VECTOR_URI: mongodb://mongoadmin:bdung@mongo:27017/?retryWrites=true&w=majority
+      VECTOR_DB_NAME: test
     ports:
-      - 33:80
+      - 3030:80
+    depends_on:
+      postgresql_db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
   
   worker:
     image: worker
@@ -113,6 +140,11 @@ services:
     volumes:
       - ./data/IdP-rsa:/app/app/rsa # key pair
       - ./services/IdP:/app/app # hot-reload
+    depends_on:
+      postgresql_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   registry:
     image: service_registry

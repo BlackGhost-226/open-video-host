@@ -1,6 +1,5 @@
 from . import app
 
-from . import Session
 from sqlalchemy import select
 from sqlalchemy import insert
 from sqlalchemy import delete
@@ -28,7 +27,7 @@ allowed_columns = {
 }
 @app.get("/db/{table}")
 def get_row(table: str, id: Optional[str] = None):
-    with Session() as session:
+    with app.Session() as session:
         sql_table = tables.get(table)
         columns = allowed_columns.get(table)
         if not sql_table:
@@ -42,7 +41,7 @@ def get_row(table: str, id: Optional[str] = None):
 
 @app.post("/db/{table}")
 def add_row(table: str, post_data: create_row_POST):
-    with Session() as session:
+    with app.Session() as session:
         sql_table = tables.get(table)
         if not sql_table:
             raise HTTPException(status_code=404, detail="Table not found")
@@ -53,7 +52,7 @@ def add_row(table: str, post_data: create_row_POST):
 
 @app.delete("/db/{table}")
 def add_row(table: str, id: str):
-    with Session() as session:
+    with app.Session() as session:
         sql_table = tables.get(table)
         if not sql_table:
             raise HTTPException(status_code=404, detail="Table not found")
