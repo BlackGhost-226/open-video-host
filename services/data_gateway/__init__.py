@@ -23,8 +23,8 @@ MIME_TO_EXT = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.mongodb_client = MongoClient(getenv("VECTOR_URI"))
-    app.database = app.mongodb_client[getenv("VECTOR_DB_NAME")]
+    #app.mongodb_client = MongoClient(getenv("VECTOR_URI"))
+    #app.database = app.mongodb_client[getenv("VECTOR_DB_NAME")]
 
     netloc: dict[str, str] = urlsplit(getenv("S3_URI")).netloc.split("@")
     app.minio_client = Minio(netloc[-1], access_key=netloc[0].split(":")[0], secret_key=netloc[0].split(":")[-1], secure=False)
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    app.mongodb_client.close()
+    #app.mongodb_client.close()
     connection.close()
 
 app = FastAPI(lifespan=lifespan)

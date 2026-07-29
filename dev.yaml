@@ -64,25 +64,25 @@ services:
       timeout: 15s
       retries: 3
   
-  mongo:
-      image: mongo
-      restart: always
-      logging:
-          options:
-              max-size: 1g
-      environment:
-          - MONGO_INITDB_ROOT_USERNAME=mongoadmin
-          - MONGO_INITDB_ROOT_PASSWORD=bdung
-      volumes:
-      - ./data/mongo/init:/docker-entrypoint-initdb.d
-      - ./data/mongo/db:/data/db
-      - ./data/mongo/configdb:/data/configdb
-      - ./data/mongo/mongot:/data/mongot
-      healthcheck:
-        test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
-        interval: 15s
-        timeout: 15s
-        retries: 3
+  #mongo:
+  #    image: mongo
+  #    restart: always
+  #    logging:
+  #        options:
+  #            max-size: 1g
+  #    environment:
+  #        - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+  #        - MONGO_INITDB_ROOT_PASSWORD=bdung
+  #    volumes:
+  #    - ./data/mongo/init:/docker-entrypoint-initdb.d
+  #    - ./data/mongo/db:/data/db
+  #    - ./data/mongo/configdb:/data/configdb
+  #    - ./data/mongo/mongot:/data/mongot
+  #    healthcheck:
+  #      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+  #      interval: 15s
+  #      timeout: 15s
+  #      retries: 3
 
   ui:
     image: ui
@@ -105,8 +105,8 @@ services:
     environment:
       S3_URI: minio://minio:minio123@minio:9000/
       DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
-      VECTOR_URI: mongodb://mongoadmin:bdung@mongo:27017/?retryWrites=true&w=majority
-      VECTOR_DB_NAME: test
+      #VECTOR_URI: mongodb://mongoadmin:bdung@mongo:27017/?retryWrites=true&w=majority
+      #VECTOR_DB_NAME: test
     ports:
       - 3030:80
     depends_on:
