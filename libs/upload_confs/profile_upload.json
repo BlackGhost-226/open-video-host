@@ -1,14 +1,11 @@
 {
-    "download": [
-        {"/profile": "img"}
-    ],
-    "processing": [
-        {"compress_file": ["V:{img}", "image", null]}, 
-        {"change_format": ["V:{img}", "jpg", null]},
-        {"set_scale": ["V:{img}", "profile", null]}
-    ],
-    "sql": [],
-    "upload": [
-        {"V:{img}": ["profiles", "V:{user_id}.jpg", "image/jpeg"]}
+    "intructions": [
+        {"s3.download": {"kwargs": {}, "args": ["/profile"], "write_to": "img"}},
+
+        {"ffmpeg.compress_file": {"kwargs": {}, "args": ["V:{img}", "image"], "write_to": null}},
+        {"ffmpeg.change_format": {"kwargs": {}, "args": ["V:{img}", "jpg"], "write_to": null}},
+        {"ffmpeg.set_scale": {"kwargs": {}, "args": ["V:{img}", "profile"], "write_to": null}},
+
+        {"s3.upload": {"kwargs": {}, "args": ["V:{img}", "profiles", "V:{user_id}.jpg", "image/jpeg"], "write_to": null}}
     ]
 }
