@@ -1,0 +1,5 @@
+{
+    "intructions": [
+        {"func": {"kwargs": {}, "args": [], "write_to": "var_name"}}
+    ]
+}
