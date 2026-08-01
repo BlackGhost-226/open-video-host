@@ -13,6 +13,7 @@ from uuid import UUID
 from uuid import uuid4
 
 from datetime import datetime
+from datetime import timezone
 
 class Base(DeclarativeBase):
     pass
@@ -33,7 +34,7 @@ class RefreshToken(Base):
     issuer: Mapped[str] = mapped_column(String(128))
     last_access_jti: Mapped[UUID] = mapped_column(default=uuid4, unique=True)
     device_agent: Mapped[str] = mapped_column(String(2000))
-    expiration_time: Mapped[datetime] = mapped_column(default=datetime.now)
+    expiration_time: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
     #valid: Mapped[bool] = mapped_column(Boolean(), default=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     user: Mapped["User"] = relationship(back_populates="refresh_tokens")
