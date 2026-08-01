@@ -7,6 +7,6 @@ def set(run_env: RunningEnv, **kwargs):
         run_env.vars[key] = value
 
 @var_lib.add_func
-def delete(run_env: RunningEnv, *args):
+def delete(run_env: RunningEnv, args: list):
     for key in args:
         del run_env.vars[key]

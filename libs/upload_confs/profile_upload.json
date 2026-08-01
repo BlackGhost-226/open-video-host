@@ -1,11 +1,11 @@
 {
     "intructions": [
-        {"s3.download": {"kwargs": {}, "args": ["/profile"], "write_to": "img"}},
+        {"s3.download": {"kwargs": {"minioPath": "/profile"}, "write_to": "img"}},
 
-        {"ffmpeg.compress_file": {"kwargs": {}, "args": ["V:{img}", "image"], "write_to": null}},
-        {"ffmpeg.change_format": {"kwargs": {}, "args": ["V:{img}", "jpg"], "write_to": null}},
-        {"ffmpeg.set_scale": {"kwargs": {}, "args": ["V:{img}", "profile"], "write_to": null}},
+        {"ffmpeg.compress_file": {"kwargs": {"input_path": "V:{img}", "type": "image"}}},
+        {"ffmpeg.change_format": {"kwargs": {"input_path": "V:{img}", "type": "jpg"}}},
+        {"ffmpeg.set_scale": {"kwargs": {"input_path": "V:{img}", "type": "profile"}}},
 
-        {"s3.upload": {"kwargs": {}, "args": ["V:{img}", "profiles", "V:{user_id}.jpg", "image/jpeg"], "write_to": null}}
+        {"s3.upload": {"kwargs": {"file_path": "V:{img}", "bucket": "profiles", "minioPath": "V:{user_id}.jpg", "contentType": "image/jpeg"}}}
     ]
 }

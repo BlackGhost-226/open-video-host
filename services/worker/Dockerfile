@@ -16,5 +16,6 @@ RUN pip install --no-cache-dir pika requests==2.32.5
 
 COPY ./services/worker ./app
 COPY ./libs/clients ./app/clients
+COPY ./libs/json_lang ./app/json_lang
 
 CMD ["python", "app"]

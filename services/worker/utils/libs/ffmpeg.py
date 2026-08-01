@@ -1,9 +1,13 @@
 import subprocess
 import os
 from typing import Callable
-from utils import working_dir
+from .. import working_dir
+from json_lang import Lib
 
 
+ffmpeg_lib = Lib("ffmpeg")
+
+@ffmpeg_lib.add_func
 def compress_file(input_path: str, type: str):
     compress_func: Callable = compress_video if type == "video" else compress_img
     os.rename(input_path, input_path+".temp")
@@ -13,7 +17,8 @@ def compress_file(input_path: str, type: str):
     os.remove(input_path+".temp")
     return com
 
-def convert_to_hls(input_path: str, type: str):
+@ffmpeg_lib.add_func
+def convert_to_hls(input_path: str):
     """Convert video to HLS format using FFmpeg"""
     output_dir = os.path.join(working_dir, 'hls')
     os.makedirs(output_dir, exist_ok=True)
@@ -40,7 +45,8 @@ def convert_to_hls(input_path: str, type: str):
         #logger.error(f"HLS conversion failed: {e}")
         return False
 
-def convert_to_dash(input_path: str, type: str):
+@ffmpeg_lib.add_func
+def convert_to_dash(input_path: str):
     """Convert video to DASH format using FFmpeg"""
     output_dir = os.path.join(working_dir, 'dash')
     os.makedirs(output_dir, exist_ok=True)
@@ -98,7 +104,8 @@ def compress_img(input_path: str, output_path: str):
         #logger.error(f"compression failed: {e}")
         return False
 
-def get_jpg(input_path: str, type: str):
+@ffmpeg_lib.add_func
+def get_jpg(input_path: str):
     output_path = os.path.join(working_dir, f"{input_path.split("/")[-1].split(".")[0]}.jpg")
     jpg_cmd = ['ffmpeg', '-y',
                '-ss', '00:00:02',
@@ -125,9 +132,9 @@ def scaler(input_path: str, output_path: str, scale: str):
         return True
     except subprocess.CalledProcessError as e:
         print(e)
-        raise
         return False
 
+@ffmpeg_lib.add_func
 def set_scale(input_path: str, type: str):
     scale: str = str()
     if type == "thumbnail":
@@ -148,6 +155,7 @@ def set_scale(input_path: str, type: str):
     os.remove(input_path+".temp")
     return scaled
 
+@ffmpeg_lib.add_func
 def change_format(input_path: str, type: str):
     output_path = os.path.join(working_dir, f"{input_path.split("/")[-1].split(".")[0]}.{type}")
     os.rename(input_path, input_path+".temp")

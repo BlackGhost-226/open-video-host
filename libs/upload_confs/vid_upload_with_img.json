@@ -1,26 +1,26 @@
 {
     "intructions": [
-        {"s3.download": {"kwargs": {}, "args": ["/video"], "write_to": "vid"}},
-        {"s3.download": {"kwargs": {}, "args": ["/thumbnail"], "write_to": "img"}},
+        {"s3.download": {"kwargs": {"minioPath": "/video"}, "write_to": "vid"}},
+        {"s3.download": {"kwargs": {"minioPath": "/thumbnail"}, "write_to": "img"}},
 
-        {"ffmpeg.compress_file": {"kwargs": {}, "args": ["V:{vid}", "video"], "write_to": null}},
-        {"ffmpeg.compress_file": {"kwargs": {}, "args": ["V:{img}", "image"], "write_to": null}},
-        {"ffmpeg.change_format": {"kwargs": {}, "args": ["V:{img}", "jpg"], "write_to": null}},
-        {"ffmpeg.set_scale": {"kwargs": {}, "args": ["V:{img}", "thumbnail"], "write_to": null}},
-        {"ffmpeg.convert_to_hls": {"kwargs": {}, "args": ["V:{vid}"], "write_to": "hls"}},
-        {"ffmpeg.convert_to_dash": {"kwargs": {}, "args": ["V:{vid}"], "write_to": "dash"}},
+        {"ffmpeg.compress_file": {"kwargs": {"input_path": "V:{vid}", "type": "video"}}},
+        {"ffmpeg.compress_file": {"kwargs": {"input_path": "V:{img}", "type": "image"}}},
+        {"ffmpeg.change_format": {"kwargs": {"input_path": "V:{img}", "type": "jpg"}}},
+        {"ffmpeg.set_scale": {"kwargs": {"input_path": "V:{img}", "type": "thumbnail"}}},
+        {"ffmpeg.convert_to_hls": {"kwargs": {"input_path": "V:{vid}"}, "write_to": "hls"}},
+        {"ffmpeg.convert_to_dash": {"kwargs": {"input_path": "V:{vid}"}, "write_to": "dash"}},
 
-        {"sql.new": {"kwargs": {}, "args": [
-            "videos", 
-            {
-                "title": "V:{title}", 
-                "description": "V:{description}", 
-                "author_user_id": "V:{author_id}"
-            }
-            ], "write_to": "video"}},
+        {"sql.add": {"kwargs": 
+        {
+            "table": "videos", 
 
-        {"s3.upload": {"kwargs": {}, "args": ["V:{hls}", "streams", "V:{video.id}/hls", "application/x-mpegURL"], "write_to": null}},
-        {"s3.upload": {"kwargs": {}, "args": ["V:{dash}", "streams", "V:{video.id}/dash", "application/dash+xml"], "write_to": null}},
-        {"s3.upload": {"kwargs": {}, "args": ["V:{img}", "streams", "V:{video.id}/thumbnail.jpg", "image/jpeg"], "write_to": null}}
+            "title": "V:{title}", 
+            "description": "V:{description}", 
+            "author_user_id": "V:{author_id}"
+            }, "write_to": "video"}},
+
+        {"s3.upload": {"kwargs": {"file_path": "V:{hls}", "bucket": "streams", "minioPath": "V:{video.id}/hls", "contentType": "application/x-mpegURL"}}},
+        {"s3.upload": {"kwargs": {"file_path": "V:{dash}", "bucket": "streams", "minioPath": "V:{video.id}/dash", "contentType": "application/dash+xml"}}},
+        {"s3.upload": {"kwargs": {"file_path": "V:{img}", "bucket": "streams", "minioPath": "V:{video.id}/thumbnail.jpg", "contentType": "image/jpeg"}}}
     ]
 }

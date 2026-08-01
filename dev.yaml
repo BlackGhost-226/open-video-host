@@ -1,8 +1,17 @@
 services:
-  adminer:
-    image: adminer:latest
-    ports: 
-      - 98:8080
+  dbgate:
+    image: dbgate/dbgate:latest
+    restart: always
+    ports:
+      - "98:3000"
+    environment:
+      CONNECTIONS: db
+      ENGINE_db: postgres@dbgate-plugin-postgres
+      SERVER_db: postgresql_db
+      PORT_db: "5432"
+      USER_db: root
+      PASSWORD_db: test
+      DATABASE_db: test
   
   redis: 
     image: redis:7-alpine
@@ -21,13 +30,13 @@ services:
     image: postgres:16.3
     restart: always
     environment:
-      POSTGRES_USER: test
+      POSTGRES_USER: root
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-d", "test"]
+      test: ["CMD-SHELL", "pg_isready -U root -d test"]
       interval: 15s
       timeout: 15s
       retries: 3
@@ -93,9 +102,6 @@ services:
       - 80:80
     volumes:
       - ./services/ui:/app/app # hot-reload
-    #depends_on:
-    #  idp:
-    #    condition: service_healthy
     
   data_gateway:
     image: data-gateway
@@ -104,18 +110,18 @@ services:
       dockerfile: services/data_gateway/Dockerfile
     environment:
       S3_URI: minio://minio:minio123@minio:9000/
-      DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
+      DATABASE_URI: postgresql://root:test@postgresql_db:5432/test
       #VECTOR_URI: mongodb://mongoadmin:bdung@mongo:27017/?retryWrites=true&w=majority
       #VECTOR_DB_NAME: test
     ports:
       - 3030:80
-    depends_on:
-      postgresql_db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
+    #depends_on:
+      #postgresql_db:
+      #  condition: service_healthy
+      #minio:
+      #  condition: service_healthy
+      #mongo:
+      #  condition: service_healthy
   
   worker:
     image: worker
@@ -134,7 +140,7 @@ services:
       context: .
       dockerfile: ./services/IdP/Dockerfile.dev
     environment:
-      DATABASE_URI: postgresql://test:test@postgresql_db:5432/test
+      DATABASE_URI: postgresql://root:test@postgresql_db:5432/test
     ports:
       - 5000:80
     volumes:
