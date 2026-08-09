@@ -110,7 +110,11 @@ class Builder(ABC):
         return self
 
     def addSequence(self, name: str, builder: "Builder", **kwargs) -> "Builder":
-        self.features.append(Feature(builder.min_len, name, builder.decode, **kwargs))
+        def _parse(ctx: CallContext) -> tuple[Any, int]:
+            data = builder.decode(ctx.data)
+            return data[0], data[1]
+        
+        self.features.append(Feature(builder.min_len, name, _parse, **kwargs))
         return self
 
     @abstractmethod
