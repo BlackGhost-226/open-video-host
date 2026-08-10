@@ -7,7 +7,7 @@ def test(test_bytes: bytes, message_class: MessageBase):
     print()
 
 if __name__ == "__main__":
-    from messages.simple.frontend import Query, SASLInitialResponse
+    from messages.simple.frontend import Query, SASLInitialResponse, Bind, FunctionCall, Parse
     from messages.simple.backend import AuthenticationMD5Password, AuthenticationSASL, CopyInResponse, DataRow, NegotiateProtocolVersion, AuthenticationOk, ErrorResponse, BackendKeyData, FunctionCallResponse, ParameterDescription
     from messages.special import StartupMessage, CancelRequest
     
@@ -122,3 +122,71 @@ if __name__ == "__main__":
         b'\x00\x00\x00\x19'  # OID 2: 25 (text)
     )
     test(param_description_bytes, ParameterDescription)
+
+    bind_bytes = (
+        b'B'                                  # Tag: 'B' (Bind)
+        b'\x00\x00\x00\x31'                  # Length: 49 bytes (including self)
+        b'my_portal\x00'                     # Portal name (String)
+        b'my_statement\x00'                  # PreparedStatement name (String)
+
+        # --- Parameter Format Codes ---
+        b'\x00\x02'                          # C = 2 format codes
+        b'\x00\x01'                          # Format code 0: 1 (Binary)
+        b'\x00\x00'                          # Format code 1: 0 (Text)
+
+        # --- Parameter Values ---
+        b'\x00\x03'                          # 3 parameter values
+
+        # Param 1: Length 4 -> Int32 42
+        b'\x00\x00\x00\x04'                  
+        b'\x00\x00\x00\x2a'                  
+
+        # Param 2: Length 0 -> Empty string / bytes
+        b'\x00\x00\x00\x00'                  
+
+        # Param 3: Length -1 -> NULL
+        b'\xff\xff\xff\xff'                  
+
+        # --- Result-Column Format Codes ---
+        b'\x00\x02'                          # R = 2 format codes
+        b'\x00\x00'                          # Result format 0: 0 (Text)
+        b'\x00\x01'                          # Result format 1: 1 (Binary)
+    )
+    test(bind_bytes, Bind)
+
+    function_call_bytes = (
+        b'F'                                  # Tag: 'F' (FunctionCall)
+        b'\x00\x00\x00\x23'                  # Length: 35 bytes (excluding tag)
+        b'\x00\x00\x07\xe2'                  # Function OID: 2018
+
+        # --- Argument Format Codes ---
+        b'\x00\x01'                          # C = 1 format code (applies to all args)
+        b'\x00\x01'                          # Format code 0: 1 (Binary)
+
+        # --- Arguments ---
+        b'\x00\x02'                          # N = 2 arguments
+
+        # Arg 1: Length 4 -> Int32 42
+        b'\x00\x00\x00\x04'                  
+        b'\x00\x00\x00\x2a'                  
+
+        # Arg 2: Length -1 -> NULL
+        b'\xff\xff\xff\xff'                  
+
+        # --- Result Format Code ---
+        b'\x00\x01'                          # Result format: 1 (Binary)
+    )
+    test(function_call_bytes, FunctionCall)
+
+    parse_bytes = (
+        b'P'                                  # Tag: 'P' (Parse)
+        b'\x00\x00\x00\x38'                  # Length: 56 bytes (excluding tag)
+        b'stmt_1\x00'                        # Statement name: "stmt_1\x00"
+        b'SELECT * FROM users WHERE id = $1 AND role = $2\x00'  # Query string
+
+        # --- Parameter Data Types ---
+        b'\x00\x02'                          # N = 2 parameter OIDs
+        b'\x00\x00\x00\x17'                  # Param 1 OID: 23 (INT4)
+        b'\x00\x00\x00\x19'                  # Param 2 OID: 25 (TEXT)
+    )
+    test(parse_bytes, Parse)

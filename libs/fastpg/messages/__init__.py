@@ -139,7 +139,7 @@ class ParserBuilder(Builder):
 
                 if feature.break_condition and feature.break_condition(CallContext(payload_data[offset:], decoded)):
                     break
-
+                #print(f"{payload_data[offset:]}    {offset}")
                 data = feature.callback(CallContext(payload_data[offset:], decoded))
                 offset = offset + data[1]
                 data = feature.transform(data[0]) if feature.transform else data[0]
