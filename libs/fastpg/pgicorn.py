@@ -8,6 +8,11 @@ import struct
 from messages.special import StartupMessage, SSLRequest, GSSENCRequest, CancelRequest
 from messages.simple.frontend import Query
 
+from state_machine import StateMachine
+from state_machine.transitions import transitions
+from state_machine.states import State
+from state_machine.events import Event
+
 
 async def read_special_packet(reader: StreamReader):
     len_bytes = await reader.readexactly(4)
@@ -15,8 +20,56 @@ async def read_special_packet(reader: StreamReader):
     rest = await reader.readexactly(length - 4)
     return len_bytes + rest
 
+async def read_simple_packet(reader: StreamReader):
+    msg_type = await reader.read(1)
+    if not msg_type: return
+    msg_len_bytes = await reader.readexactly(4)
+    msg_len = struct.unpack('!I', msg_len_bytes)[0]
+    body = await reader.readexactly(msg_len - 4)
+    return msg_type + msg_len_bytes + body
+
 async def handle_cancel(id, key):
     pass
+
+async def handle_startup(client_reader, client_writer):
+    startup_packet = None
+    ssl_negotiated = False
+    gssenc_negotiated = False
+    while True:
+        try:
+            startup_packet = await read_special_packet(client_reader)
+            if StartupMessage.matches(startup_packet):
+                break
+
+            elif SSLRequest.matches(startup_packet):
+                if ssl_negotiated:
+                    raise ConnectionError("Client sent duplicate SSLRequest")
+                client_writer.write(b'N')
+                await client_writer.drain()
+                ssl_negotiated = True
+
+            elif GSSENCRequest.matches(startup_packet):
+                if gssenc_negotiated:
+                    raise ConnectionError("Client sent duplicate GSSENCRequest")
+                client_writer.write(b'N')
+                await client_writer.drain()
+                gssenc_negotiated = True
+
+            elif CancelRequest.matches(startup_packet):
+                cancel_req = CancelRequest(startup_packet)
+                await handle_cancel(cancel_req.process_ID, cancel_req.secret_key)
+                client_writer.close()
+                return
+            
+            else:
+                client_writer.close()
+                return
+            
+        except Exception:
+            client_writer.close()
+            return
+        
+    return startup_packet
 
 def build_postgres_error(message: str, code: str = "42501") -> bytes:
     fields = [
@@ -54,44 +107,10 @@ class Server:
             pass
 
     async def _handle_connection(self, client_reader: StreamReader, client_writer: StreamWriter):
-        startup_packet = None
-        ssl_negotiated = False
-        gssenc_negotiated = False
-        while True:
-            try:
-                startup_packet = await read_special_packet(client_reader)
-                if startup_packet == StartupMessage:
-                    break
+        state_machine = StateMachine(State.Startup, transitions)
 
-                elif startup_packet == SSLRequest:
-                    if ssl_negotiated:
-                        raise ConnectionError("Client sent duplicate SSLRequest")
-                    client_writer.write(b'N')
-                    await client_writer.drain()
-                    ssl_negotiated = True
-
-                elif startup_packet == GSSENCRequest:
-                    if gssenc_negotiated:
-                        raise ConnectionError("Client sent duplicate GSSENCRequest")
-                    client_writer.write(b'N')
-                    await client_writer.drain()
-                    gssenc_negotiated = True
-
-                elif startup_packet == CancelRequest:
-                    cancel_req = CancelRequest(startup_packet)
-                    await handle_cancel(cancel_req.process_ID, cancel_req.secret_key)
-                    client_writer.close()
-                    return
-                
-                else:
-                    client_writer.close()
-                    return
-                
-            except Exception:
-                client_writer.close()
-                return
-
-        params = StartupMessage(startup_packet)
+        startup_packet = handle_startup(client_reader, client_writer)
+        params = StartupMessage.parse(startup_packet)
 
         try:
             backend_reader, backend_writer = await asyncio.open_connection(self.db_host, self.db_port)
@@ -103,69 +122,70 @@ class Server:
             client_writer.close()
             return
 
-        # Forward Backend -> Client asynchronously
-        async def forward_backend():
-            try:
-                while True:
-                    data = await backend_reader.read(8192)
-                    if not data: break
-                    client_writer.write(data)
-                    await client_writer.drain()
-            except Exception: pass
+        state_machine.transition(Event.StartupComplete)
 
-        backend_task = asyncio.create_task(forward_backend())
+        #async def forward_backend():
+        #    try:
+        #        while True:
+        #            data = await backend_reader.read(8192)
+        #            if not data: break
+        #            client_writer.write(data)
+        #            await client_writer.drain()
+        #    except Exception: pass
 
-        receive_queue = asyncio.Queue()
+        #backend_task = asyncio.create_task(forward_backend())
+
+        #receive_queue = asyncio.Queue()
         
-        scope = {
-            "type": "postgres",
-            "client": client_writer.get_extra_info('peername'),
-            "params": params
-        }
+        #scope = {
+        #    "type": "postgres",
+        #    "client": client_writer.get_extra_info('peername'),
+        #    "params": params
+        #}
 
-        async def receive():
-            return await receive_queue.get()
+        #async def receive():
+        #    return await receive_queue.get()
 
-        async def send(message: dict):
-            if message["type"] == "FORWARD":
-                backend_writer.write(message["raw"])
-                await backend_writer.drain()
-            elif message["type"] == "REJECT":
-                err_packet = build_postgres_error(message["message"], message.get("code", "42501"))
-                client_writer.write(err_packet)
-                await client_writer.drain()
+        #async def send(message: dict):
+        #    if message["type"] == "FORWARD":
+        #        backend_writer.write(message["raw"])
+        #        await backend_writer.drain()
+        #    elif message["type"] == "REJECT":
+        #        err_packet = build_postgres_error(message["message"], message.get("code", "42501"))
+        #        client_writer.write(err_packet)
+        #        await client_writer.drain()
 
-        # Fire up Application Task
-        app_task = asyncio.create_task(self.app(scope, receive, send))
+        #app_task = asyncio.create_task(self.app(scope, receive, send))
 
-        # Main Client Binary Packet Loop
         try:
             while True:
-                msg_type = await client_reader.read(1)
-                if not msg_type: break
+                packet = None
 
-                msg_len_bytes = await client_reader.readexactly(4)
-                msg_len = struct.unpack('!I', msg_len_bytes)[0]
-                body = await client_reader.readexactly(msg_len - 4)
-                full_packet = msg_type + msg_len_bytes + body
+                if state_machine.state == State.Idle:
+                    packet = read_simple_packet(client_reader)
+                    state_machine.transition(Event.NewQuery)
 
-                event = {"type": "UNKNOWN", "raw": full_packet}
+                elif state_machine.state == State.Query:
+                    if Query.matches(packet):
+                        print(f"Simple Query: {Query.parse(packet)}")
+                        backend_writer.write(packet)
+                        await backend_writer.drain()
+                        state_machine.transition(Event.EndOfQuery)
+                    
+                elif state_machine.state == State.Response:
+                    state_machine.transition(Event.ReadyForQuery)
 
-                if msg_type == b'Q':  # Simple Query
-                    event["type"] = "QUERY"
-                    event["sql"] = body[:-1].decode('utf-8', errors='ignore')
-                elif msg_type == b'P': # Extended Protocol Parse
-                    parts = body.split(b'\x00')
-                    event["type"] = "PARSE"
-                    event["sql"] = parts[1].decode('utf-8', errors='ignore') if len(parts) > 1 else ""
+                #event = {"type": "UNKNOWN", "raw": packet}
 
-                await receive_queue.put(event)
+                
+
+                #await receive_queue.put(event)
         except Exception:
             pass
         finally:
-            await receive_queue.put({"type": "DISCONNECT"})
-            backend_task.cancel()
-            app_task.cancel()
+            #await receive_queue.put({"type": "DISCONNECT"})
+            #backend_task.cancel()
+            #app_task.cancel()
             client_writer.close()
             backend_writer.close()
 

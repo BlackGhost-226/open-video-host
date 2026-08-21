@@ -7,8 +7,16 @@ def test(test_bytes: bytes, message_class: MessageBase):
     print()
 
 if __name__ == "__main__":
-    from messages.simple.frontend import Query, SASLInitialResponse, Bind, FunctionCall, Parse
-    from messages.simple.backend import AuthenticationMD5Password, AuthenticationSASL, CopyInResponse, DataRow, NegotiateProtocolVersion, AuthenticationOk, ErrorResponse, BackendKeyData, FunctionCallResponse, ParameterDescription
+    from messages.simple.frontend import Query, FunctionCall
+    from messages.simple.frontend.auth import SASLInitialResponse
+    from messages.simple.frontend.extended_query import Bind, Parse
+
+    from messages.simple.backend import BackendKeyData, FunctionCallResponse, ParameterDescription
+    from messages.simple.backend.auth import AuthenticationMD5Password, AuthenticationSASL, NegotiateProtocolVersion, AuthenticationOk
+    from messages.simple.backend.copy import CopyInResponse
+    from messages.simple.backend.query import DataRow
+    from messages.simple.backend.info import ErrorResponse
+    
     from messages.special import StartupMessage, CancelRequest
     
     query_test = b'Q\x00\x00\x00\x12SELECT 1;\x00'
