@@ -2,6 +2,11 @@ from enum import Enum
 
 class Event(Enum):
     StartupComplete = 1
-    NewQuery = 2
-    EndOfQuery = 3
-    ReadyForQuery = 4
+
+    NewExtendedQuery = 2
+    NewSimpleQuery = 3
+
+    EndOfQuery = 4
+    ReadyForQuery = 5
+
+    UnknowPacket = 6

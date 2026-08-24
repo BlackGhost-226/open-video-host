@@ -1,0 +1,32 @@
+services:
+  postgresql_db:
+    image: postgres:16.3
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d test"]
+      interval: 15s
+      timeout: 15s
+      retries: 3
+    ports: 
+      - 5432:5432
+    
+  dbgate:
+    image: dbgate/dbgate:latest
+    restart: always
+    ports:
+      - "98:3000"
+    environment:
+      CONNECTIONS: db
+      ENGINE_db: postgres@dbgate-plugin-postgres
+      SERVER_db: postgresql_db
+      PORT_db: "5432"
+      USER_db: root
+      PASSWORD_db: test
+      DATABASE_db: test
+    
