@@ -9,7 +9,8 @@ class Parse(MessageBase):
         "OID_param_types", ParserBuilder()
         .addInt16("num")
         .addInt32("OID_type", count=lambda ctx: ctx.decoded["num"][-1]),
-        transform=lambda data: data["OID_type"]
+        transform=lambda data: data["OID_type"],
+        retransform=lambda data: {"num": [len(data)], "OID_type": data}
         )
 
 class Bind(MessageBase):
@@ -21,17 +22,20 @@ class Bind(MessageBase):
               .addSequence("format_codes", ParserBuilder()
                 .addInt16("param_format_code_num")
                 .addInt16("format_codes", count=lambda ctx: ctx.decoded["param_format_code_num"][-1]),
-                transform=lambda data: data["format_codes"]
+                transform=lambda data: data["format_codes"],
+                retransform=lambda data: {"param_format_code_num": [len(data)], "format_codes": data}
               )
               .addSequence("parameters", ParserBuilder(CountLists)
                 .addInt16("param_num")
                 .addIntByteList("parameters", "param_num"),
-                transform=lambda data: data["parameters"]
+                transform=lambda data: data["parameters"],
+                retransform=lambda data: {"param_num": [len(data)], "parameters": data}
               )
               .addSequence("result_format_codes", ParserBuilder()
                 .addInt16("result_format_code_num")
                 .addInt16("result_format_codes", count=lambda ctx: ctx.decoded["result_format_code_num"][-1]),
-                transform=lambda data: data["result_format_codes"]
+                transform=lambda data: data["result_format_codes"],
+                retransform=lambda data: {"result_format_code_num": [len(data)], "result_format_codes": data}
               )
               )
 

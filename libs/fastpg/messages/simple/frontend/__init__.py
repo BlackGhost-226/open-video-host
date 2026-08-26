@@ -22,12 +22,14 @@ class FunctionCall(MessageBase):
               .addSequence("format_codes", ParserBuilder()
                 .addInt16("format_code_num")
                 .addInt16("format_codes", count=lambda ctx: ctx.decoded["format_code_num"][-1]),
-                transform=lambda data: data["format_codes"]
+                transform=lambda data: data["format_codes"],
+                retransform=lambda data: {"format_code_num": [len(data)], "format_codes": data}
               )
               .addSequence("arguments", ParserBuilder(CountLists)
                 .addInt16("num")
                 .addIntByteList("argument", "num"),
-                transform=lambda data: data["argument"]
+                transform=lambda data: data["argument"],
+                retransform=lambda data: {"num": [len(data)], "argument": data}
               )
               .addInt16("result_format_code")
               )

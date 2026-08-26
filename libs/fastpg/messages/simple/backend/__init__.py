@@ -17,7 +17,7 @@ class CommandComplete(MessageBase):
 
 class FunctionCallResponse(MessageBase):
     checker = CheckerBuilder().addChar("V").addInt32(TrueChecker())
-    parser = ParserBuilder(UntilNullLists).addInt32("len", unsigned=False).addByte("result_value", length=lambda ctx: ctx.decoded["len"][-1], condition=lambda ctx: ctx.decoded["len"][-1] != -1, default=None)
+    parser = ParserBuilder().addInt32("len", unsigned=False).addByte("result_value", length=lambda ctx: ctx.decoded["len"][-1], condition=lambda ctx: ctx.decoded["len"][-1] != -1, default=None)
 
 class NoData(MessageBase):
     checker = CheckerBuilder().addChar("n").addInt32(4)

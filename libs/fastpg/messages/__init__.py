@@ -4,6 +4,8 @@ from typing import Callable, Any
 from abc import ABC, abstractmethod
 from types import MethodType
 
+from .checkers import TrueChecker, LSbChecker, MSbChecker
+
 
 NO_VALUE = object()
 
@@ -12,16 +14,22 @@ class Feature:
     min_length: int
     name: str
     callback: Callable
+    encode_callback: Callable
     count: Callable | int = 1
     condition: Callable | None = None
     transform: Callable | None = None
+    retransform: Callable | None = None
     default: Any = NO_VALUE
     break_condition: Callable | None = None
 
+    def __post_init__(self):
+        if self.transform is not None and self.retransform is None:
+            raise RuntimeError("If transform is used, retransform is required")
+
 @dataclass
 class CallContext:
-    data: bytes
-    decoded: dict
+    data: Any
+    decoded: dict | bytes
 
 class Builder(ABC):
     def __init__(self, *extensions):
@@ -47,8 +55,13 @@ class Builder(ABC):
             data = ctx.data[:1]
             parsed_data = struct.unpack("!c", data)[0].decode("utf-8", errors="ignore")
             return parsed_data, 1
+
+        def _encode(ctx: CallContext) -> tuple[bytes, int]:
+            data = ctx.data[0]
+            encoded_data = struct.pack("!c", data.encode("ascii", errors="ignore"))
+            return encoded_data, 1
         
-        self.features.append(Feature(1, name, _parse, **kwargs))
+        self.features.append(Feature(1, name, _parse, _encode, **kwargs))
         return self
     
     def addInt32(self, name: str, unsigned: bool = True, **kwargs) -> "Builder":
@@ -57,8 +70,14 @@ class Builder(ABC):
             format_str = "!I" if unsigned else "!i"
             parsed_data = struct.unpack(format_str, data)[0]
             return parsed_data, 4
+
+        def _encode(ctx: CallContext):
+            data = ctx.data
+            format_str = "!I" if unsigned else "!i"
+            encoded_data = struct.pack(format_str, data)
+            return encoded_data, 4
         
-        self.features.append(Feature(4, name, _parse, **kwargs))
+        self.features.append(Feature(4, name, _parse, _encode, **kwargs))
         return self
 
     def addInt16(self, name: str, unsigned: bool = True, **kwargs) -> "Builder":
@@ -67,8 +86,14 @@ class Builder(ABC):
             format_str = "!H" if unsigned else "!h"
             parsed_data = struct.unpack(format_str, data)[0]
             return parsed_data, 2
+
+        def _encode(ctx: CallContext):
+            data = ctx.data
+            format_str = "!H" if unsigned else "!h"
+            encoded_data = struct.pack(format_str, data)
+            return encoded_data, 2
         
-        self.features.append(Feature(2, name, _parse, **kwargs))
+        self.features.append(Feature(2, name, _parse, _encode, **kwargs))
         return self
 
     def addInt8(self, name: str, unsigned: bool = True, **kwargs) -> "Builder":
@@ -77,8 +102,14 @@ class Builder(ABC):
             format_str = "!B" if unsigned else "!b"
             parsed_data = struct.unpack(format_str, data)[0]
             return parsed_data, 1
+
+        def _encode(ctx: CallContext):
+            data = ctx.data
+            format_str = "!B" if unsigned else "!b"
+            encoded_data = struct.pack(format_str, data)
+            return encoded_data, 1
         
-        self.features.append(Feature(1, name, _parse, **kwargs))
+        self.features.append(Feature(1, name, _parse, _encode, **kwargs))
         return self
     
     def addString(self, name: str, **kwargs) -> "Builder":
@@ -88,8 +119,13 @@ class Builder(ABC):
             if null_idx == -1:
                 return data.decode('utf-8', errors='ignore'), len(data)
             return data[:null_idx].decode('utf-8', errors='ignore'), null_idx + 1
+
+        def _encode(ctx: CallContext):
+            data = ctx.data
+            encoded_data = data.encode("ascii", errors="ignore") + b'\x00'
+            return encoded_data, len(encoded_data)
         
-        self.features.append(Feature(-1, name, _parse, **kwargs))
+        self.features.append(Feature(-1, name, _parse, _encode, **kwargs))
         return self
 
     def addByte(self, name: str, length: Callable | int = -1, **kwargs) -> "Builder":
@@ -105,20 +141,32 @@ class Builder(ABC):
                 return ctx.data[:length], length
             else:
                 return ctx.data, len(ctx.data)
+
+        def _encode(ctx: CallContext):
+            data = ctx.data
+            return data if data else b'', len(data) if data else -1
         
-        self.features.append(Feature(-1, name, _parse, **kwargs))
+        self.features.append(Feature(-1, name, _parse, _encode, **kwargs))
         return self
 
     def addSequence(self, name: str, builder: "Builder", **kwargs) -> "Builder":
         def _parse(ctx: CallContext) -> tuple[Any, int]:
             data = builder.decode(ctx.data)
             return data[0], data[1]
+
+        def _encode(ctx: CallContext):
+            data = builder.encode(ctx.data)
+            return data[0], data[1]
         
-        self.features.append(Feature(builder.min_len, name, _parse, **kwargs))
+        self.features.append(Feature(builder.min_len, name, _parse, _encode, **kwargs))
         return self
 
     @abstractmethod
     def decode(self, payload_data: bytes):
+        pass
+
+    @abstractmethod
+    def encode(self, payload_data: dict):
         pass
 
 class ParserBuilder(Builder):
@@ -139,13 +187,46 @@ class ParserBuilder(Builder):
 
                 if feature.break_condition and feature.break_condition(CallContext(payload_data[offset:], decoded)):
                     break
-                #print(f"{payload_data[offset:]}    {offset}")
+
                 data = feature.callback(CallContext(payload_data[offset:], decoded))
                 offset = offset + data[1]
                 data = feature.transform(data[0]) if feature.transform else data[0]
                 data_list.append(data)
             decoded[feature.name] = data_list
         return decoded, offset
+
+    def encode(self, payload_data: dict):
+        encoded = bytes()
+        for feature in self.features:
+            #print(f"feature.name: {feature.name}")
+            #print(f"feature.encode_callback: {feature.encode_callback}")
+            #print(f"feature.retransform: {feature.retransform}")
+            #print(f"payload_data: {payload_data}")
+
+            data = payload_data.get(feature.name)
+            if data == None:
+                raise RuntimeError(f"requiered feature missing: {feature.name}")
+            #print(f"data: {data}")
+            
+            for sub_data in data:
+                #print(f"sub_data: {sub_data}")
+                
+                if feature.retransform:
+                    re_data = feature.retransform(sub_data)
+                    if isinstance(re_data, tuple):
+                        if re_data[1] != None:
+                            sub_data = {re_data[1]: re_data[0]}
+                        else:
+                            sub_data = re_data[0]
+                    else:
+                        sub_data = re_data
+
+                #print(f"sub_data after retransform: {sub_data}")
+                encoded_data = feature.encode_callback(CallContext(sub_data, payload_data))[0]
+                #print(f"encoded_data: {encoded_data}")
+                encoded = encoded + (encoded_data if encoded_data else b'')
+                #print(f"encoded: {encoded}")
+        return encoded, len(encoded)
 
 class CheckerBuilder(Builder):
     def decode(self, payload_data: bytes):
@@ -163,6 +244,18 @@ class CheckerBuilder(Builder):
 
         return True
 
+    def encode(self, payload_data: dict):
+        encoded = bytes()
+        for feature in self.features:
+            if type(feature.name) in (TrueChecker, LSbChecker, MSbChecker):
+                data = payload_data.get("len")
+                if data == None:
+                    raise RuntimeError(f"requiered feature missing: len")
+                encoded = encoded + feature.encode_callback(CallContext(data, {}))[0]
+            else:
+                encoded = encoded + feature.encode_callback(CallContext(feature.name, {}))[0]
+        return encoded, len(encoded)
+
     def __eq__(self, packet: bytes):
         return self.decode(packet)
     
@@ -176,6 +269,11 @@ class MessageBase(ABC):
     @classmethod
     def matches(cls, packet: bytes) -> bool:
         return cls.checker == packet if cls.checker else False
+
+    @classmethod
+    def build(cls, payload: dict):
+        par_res = cls.parser.encode(payload)
+        return cls.checker.encode({"len": par_res[1] + 4})[0] + par_res[0]
 
 class BuilderExtension(ABC):
     def __init__(self):

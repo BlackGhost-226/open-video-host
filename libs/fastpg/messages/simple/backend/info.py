@@ -1,6 +1,6 @@
 from ... import CheckerBuilder, ParserBuilder, MessageBase
 from ...checkers import TrueChecker
-from ...extensions import UntilNullLists, CountLists
+from ...extensions import UntilNullLists
 
 
 class ErrorResponse(MessageBase):

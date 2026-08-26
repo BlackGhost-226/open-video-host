@@ -1,9 +1,25 @@
+# TODO (important) add null bytes at ends of UntilNullLists in build
+# TODO fix incorect message legths in test byes
+
 from messages import MessageBase
 
-def test(test_bytes: bytes, message_class: MessageBase):
-    print(message_class.__name__)
-    print(message_class.matches(test_bytes))
-    print(message_class.parse(test_bytes))
+def test(test_bytes: bytes, message_class: MessageBase, test_biuld: dict):
+    pad = "  "
+    print(f"---| {message_class.__name__} |---")
+    print(f"{pad}{message_class.matches(test_bytes)}")
+
+    print()
+    parse = message_class.parse(test_bytes)
+    print(f"{pad}result: {parse}")
+    print(f"{pad}target: {test_biuld}")
+    print(f"{pad}{parse == test_biuld}")
+
+    print()
+    build = message_class.build(test_biuld)
+    print(f"{pad}result: {build}")
+    print(f"{pad}target: {test_bytes}")
+    print(f"{pad}{build == test_bytes}")
+
     print()
 
 if __name__ == "__main__":
@@ -19,11 +35,11 @@ if __name__ == "__main__":
     
     from messages.special import StartupMessage, CancelRequest
     
-    query_test = b'Q\x00\x00\x00\x12SELECT 1;\x00'
-    test(query_test, Query)
+    query_test = b'Q\x00\x00\x00\x0eSELECT 1;\x00'
+    test(query_test, Query, {'query': ['SELECT 1;']})
 
     sasl_test = b'p\x00\x00\x00#SCRAM-SHA-256\x00\x00\x00\x00\x0en=user,r=1234'
-    test(sasl_test, SASLInitialResponse)
+    test(sasl_test, SASLInitialResponse, {'mechanism': ['SCRAM-SHA-256'], 'length': [14], 'payload': [b'n=user,r=1234']})
 
     startup_bytes = (
             b'\x00\x00\x00)'                  # Int32 Length: 41 bytes
@@ -32,7 +48,7 @@ if __name__ == "__main__":
             b'database\x00app_db\x00'        # Key: 'database', Value: 'app_db'
             b'\x00'                          # Trailing null terminator
         )
-    test(startup_bytes, StartupMessage)
+    test(startup_bytes, StartupMessage, {'parameters': [{'user': ['postgres'], 'database': ['app_db']}]})
 
     cancel_bytes = (
             b'\x00\x00\x00\x10'              # Int32 Length: 16 bytes
@@ -40,10 +56,10 @@ if __name__ == "__main__":
             b'\x00\x00\x04\xd2'              # Int32 Process ID: 1234
             b'\x12\x34\x56\x78'              # Int32 Secret Key: 0x12345678 (305419896)
         )
-    test(cancel_bytes, CancelRequest)
+    test(cancel_bytes, CancelRequest, {'process_id': [1234], 'secret_key': [305419896]})
 
     auth_md5_bytes = b'R\x00\x00\x00\x0c\x00\x00\x00\x05\x12\x34\x56\x78'
-    test(auth_md5_bytes, AuthenticationMD5Password)
+    test(auth_md5_bytes, AuthenticationMD5Password, {'salt': [b'\x124Vx']})
 
     auth_sasl_bytes = (
             b'R\x00\x00\x00\x17'              # Tag 'R', Int32 Length: 23
@@ -51,7 +67,7 @@ if __name__ == "__main__":
             b'SCRAM-SHA-256\x00'            # Mechanism string + null byte
             b'\x00'                         # Trailing null terminator
         )
-    test(auth_sasl_bytes, AuthenticationSASL)
+    test(auth_sasl_bytes, AuthenticationSASL, {'mechanisms': ['SCRAM-SHA-256']})
 
     copy_in_bytes = (
             b'G\x00\x00\x00\x0b'     # Tag 'G', Int32 Length: 11
@@ -60,7 +76,7 @@ if __name__ == "__main__":
             b'\x00\x00'             # Int16 Col 0 Format: 0 (Text)
             b'\x00\x00'             # Int16 Col 1 Format: 0 (Text)
         )
-    test(copy_in_bytes, CopyInResponse)
+    test(copy_in_bytes, CopyInResponse, {'overall_format': [0], 'column_num': [2], 'column_formats': [0, 0]})
 
     data_row_bytes = (
             b'D\x00\x00\x00\x17'     # Tag 'D', Int32 Length: 23
@@ -71,7 +87,7 @@ if __name__ == "__main__":
             # Column 2: NULL (length -1)
             b'\xff\xff\xff\xff'     # Int32 Col 2 Length: -1 (NULL)
         )
-    test(data_row_bytes, DataRow)
+    test(data_row_bytes, DataRow, {'num_column_values': [2], 'values': [b'hello', None]})
 
     negotiate_bytes = (
             b'v\x00\x00\x00\x1f'     # Tag 'v', Int32 Length: 31
@@ -80,14 +96,14 @@ if __name__ == "__main__":
             b'option_a\x00'         # Option string 1 + null byte
             b'option_b\x00'         # Option string 2 + null byte
         )
-    test(negotiate_bytes, NegotiateProtocolVersion)
+    test(negotiate_bytes, NegotiateProtocolVersion, {'minor_version': [0], 'num_unrecognized_options': [2], 'unrecognized_options': ['option_a', 'option_b']})
 
     auth_ok_bytes = (
         b'R'                  # Tag 'R'
         b'\x00\x00\x00\x08'  # Length: 8
         b'\x00\x00\x00\x00'  # Auth Code: 0 (Ok)
     )
-    test(auth_ok_bytes, AuthenticationOk)
+    test(auth_ok_bytes, AuthenticationOk, {})
 
     error_response_bytes = (
         b'E'                  # Tag 'E' (or 'N' for Notice)
@@ -97,7 +113,7 @@ if __name__ == "__main__":
         b'M' b'syntax error\x00' # Field 'M' (Message): "syntax error"
         b'\x00'               # List-terminating null byte
     )
-    test(error_response_bytes, ErrorResponse)
+    test(error_response_bytes, ErrorResponse, {'errors': [{'S': ['ERROR'], 'C': ['42601'], 'M': ['syntax error']}]})
 
     backend_key_bytes = (
         b'K'                  # Tag 'K'
@@ -105,7 +121,7 @@ if __name__ == "__main__":
         b'\x00\x00\x30\x39'  # Process ID: 12345
         b'\x00\x00\x16\x2e'  # Secret Key: 5678 (4 bytes / Int32)
     )
-    test(backend_key_bytes, BackendKeyData)
+    test(backend_key_bytes, BackendKeyData, {'process_id': [12345], 'secret_key': [b'\x00\x00\x16.']})
 
     func_response_bytes = (
         b'V'                  # Tag 'V'
@@ -113,14 +129,14 @@ if __name__ == "__main__":
         b'\x00\x00\x00\x04'  # Result Byte Length: 4
         b'data'               # 4 result bytes
     )
-    test(func_response_bytes, FunctionCallResponse)
+    test(func_response_bytes, FunctionCallResponse, {'len': [4], 'result_value': [b'data']})
 
     func_response_null_bytes = (
         b'V'                  # Tag 'V'
         b'\x00\x00\x00\x08'  # Length: 8
         b'\xff\xff\xff\xff'  # Result Byte Length: -1 (NULL)
     )
-    test(func_response_null_bytes, FunctionCallResponse)
+    test(func_response_null_bytes, FunctionCallResponse, {'len': [-1], 'result_value': [None]})
 
     param_description_bytes = (
         b't'                  # Tag 't'
@@ -129,7 +145,7 @@ if __name__ == "__main__":
         b'\x00\x00\x00\x17'  # OID 1: 23 (int4)
         b'\x00\x00\x00\x19'  # OID 2: 25 (text)
     )
-    test(param_description_bytes, ParameterDescription)
+    test(param_description_bytes, ParameterDescription, {'parameter_num': [2], 'object_ids': [23, 25]})
 
     bind_bytes = (
         b'B'                                  # Tag: 'B' (Bind)
@@ -160,7 +176,7 @@ if __name__ == "__main__":
         b'\x00\x00'                          # Result format 0: 0 (Text)
         b'\x00\x01'                          # Result format 1: 1 (Binary)
     )
-    test(bind_bytes, Bind)
+    test(bind_bytes, Bind, {'destination_portal': ['my_portal'], 'prepared_statement': ['my_statement'], 'format_codes': [[1, 0]], 'parameters': [[b'\x00\x00\x00*', b'', None]], 'result_format_codes': [[0, 1]]})
 
     function_call_bytes = (
         b'F'                                  # Tag: 'F' (FunctionCall)
@@ -184,7 +200,7 @@ if __name__ == "__main__":
         # --- Result Format Code ---
         b'\x00\x01'                          # Result format: 1 (Binary)
     )
-    test(function_call_bytes, FunctionCall)
+    test(function_call_bytes, FunctionCall, {'OID': [2018], 'format_codes': [[1]], 'arguments': [[b'\x00\x00\x00*', None]], 'result_format_code': [1]})
 
     parse_bytes = (
         b'P'                                  # Tag: 'P' (Parse)
@@ -197,4 +213,4 @@ if __name__ == "__main__":
         b'\x00\x00\x00\x17'                  # Param 1 OID: 23 (INT4)
         b'\x00\x00\x00\x19'                  # Param 2 OID: 25 (TEXT)
     )
-    test(parse_bytes, Parse)
+    test(parse_bytes, Parse, {'statement': ['stmt_1'], 'query': ['SELECT * FROM users WHERE id = $1 AND role = $2'], 'OID_param_types': [[23, 25]]})

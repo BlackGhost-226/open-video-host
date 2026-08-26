@@ -5,7 +5,7 @@ class UntilNullLists(BuilderExtension):
         super().__init__()
 
     def addStringList(self, name: str):
-        self.addString(name, count=-1, break_condition=lambda ctx: ctx.data[0] == 0)
+        self.addString(name, count=-1, break_condition=lambda ctx: ctx.data[0] == 0, retransform=lambda data: data + "\0") # \0 = null in ascii -> \x00
         return self
 
     def addIntByteList(self, name: str):
@@ -21,7 +21,10 @@ class UntilNullLists(BuilderExtension):
             default=None
         ), 
         count=-1,
+
         transform=lambda data: data["value"][0],
+        retransform=lambda data: {"len": [len(data) if data else -1], "value": [data]},
+
         break_condition=lambda ctx: ctx.data[0] == 0
         )
         return self
@@ -32,7 +35,10 @@ class UntilNullLists(BuilderExtension):
             ParserBuilder().addString("key").addString("val"), 
             count=-1, 
             break_condition=lambda ctx: ctx.data[0] == 0
-            ), transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]})
+            ),
+            transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]},
+            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params")
+            )
         return self
 
     def addCharValuePairList(self, name: str):
@@ -41,7 +47,10 @@ class UntilNullLists(BuilderExtension):
             ParserBuilder().addChar("key").addString("val"), 
             count=-1, 
             break_condition=lambda ctx: ctx.data[0] == 0
-            ), transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]})
+            ),
+            transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]},
+            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params")
+            )
         return self
 
 class CountLists(BuilderExtension):
@@ -65,6 +74,7 @@ class CountLists(BuilderExtension):
             default=None
         ), 
         count=lambda ctx: ctx.decoded[until][-1],
-        transform=lambda data: data["value"][0]
+        transform=lambda data: data["value"][0],
+        retransform=lambda data: {"len": [len(data) if data else -1], "value": [data]}
         )
         return self
