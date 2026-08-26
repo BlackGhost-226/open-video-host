@@ -38,3 +38,42 @@ class PortalSuspended(MessageBase):
 class ReadyForQuery(MessageBase):
     checker = CheckerBuilder().addChar("Z").addInt32(5)
     parser = ParserBuilder().addChar("transaction_status")
+
+from .query import *
+from .query.extended import *
+from .auth import *
+from .copy import *
+from .info import *
+
+allMessages = [
+    RowDescription, 
+    DataRow, 
+    EmptyQueryResponse, 
+    AuthenticationCleartextPassword, 
+    AuthenticationGSS, 
+    AuthenticationGSSContinue, 
+    AuthenticationKerberosV5, 
+    AuthenticationMD5Password, 
+    AuthenticationOk, 
+    AuthenticationSASL, 
+    AuthenticationSASLContinue, 
+    AuthenticationSASLFinal, 
+    AuthenticationSSPI, 
+    ParseComplete, 
+    BindComplete, 
+    CopyBothResponse, 
+    CopyInResponse, 
+    CopyOutResponse, 
+    ErrorResponse, 
+    NoticeResponse, 
+    NotificationResponse,
+    BackendKeyData,
+    CloseComplete,
+    CommandComplete,
+    FunctionCallResponse,
+    NoData,
+    ParameterDescription,
+    ParameterStatus,
+    PortalSuspended,
+    ReadyForQuery
+    ]

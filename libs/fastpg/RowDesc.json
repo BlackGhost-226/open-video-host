@@ -1,0 +1,32 @@
+{
+    "field_num": [3], 
+    "fields": [
+        {
+            "field_name": ["id"], 
+            "table_OID": [16484], 
+            "column_attr": [1], 
+            "type_OID": [23], 
+            "type_size": [4], 
+            "type_modifier": [4294967295], 
+            "format_code": [0]
+        }, 
+        {
+            "field_name": ["dd"], 
+            "table_OID": [16484], 
+            "column_attr": [2], 
+            "type_OID": [1043], 
+            "type_size": [-1], 
+            "type_modifier": [254], 
+            "format_code": [0]
+        }, 
+        {
+            "field_name": ["ff"], 
+            "table_OID": [16484], 
+            "column_attr": [3], 
+            "type_OID": [1043], 
+            "type_size": [-1], 
+            "type_modifier": [254], 
+            "format_code": [0]
+        }
+    ]
+}

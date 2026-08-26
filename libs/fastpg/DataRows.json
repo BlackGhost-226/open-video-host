@@ -1,0 +1,7 @@
+[
+    {"num_column_values": [3], "values": ["1", "first value", "second value"]},
+    {"num_column_values": [3], "values": ["0", "first value", "second value"]},
+    {"num_column_values": [3], "values": ["2", "first value", "second value"]},
+    {"num_column_values": [3], "values": ["3", "first value", "second value"]},
+    {"num_column_values": [3], "values": ["4", "first value", "second value"]}
+]

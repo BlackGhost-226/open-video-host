@@ -39,3 +39,24 @@ class Query(MessageBase):
 class Terminate(MessageBase):
     checker = CheckerBuilder().addChar("X").addInt32(4)
     parser = ParserBuilder()
+
+from .auth import *
+from .extended_query import *
+
+allMessages = [
+    GSSResponse, 
+    PasswordMessage, 
+    SASLInitialResponse, 
+    SASLResponse, 
+    Parse, 
+    Bind, 
+    Describe, 
+    Execute, 
+    Sync, 
+    Close, 
+    CopyFail, 
+    Flush, 
+    FunctionCall, 
+    Query, 
+    Terminate
+    ]
