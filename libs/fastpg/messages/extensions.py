@@ -23,7 +23,7 @@ class UntilNullLists(BuilderExtension):
         count=-1,
 
         transform=lambda data: data["value"][0],
-        retransform=lambda data: {"len": [len(data) if data else -1], "value": [data]},
+        retransform=lambda data: ({"len": [len(data) if data != None else -1], "value": [data]}, b'\x00'),
 
         break_condition=lambda ctx: ctx.data[0] == 0
         )
@@ -37,7 +37,7 @@ class UntilNullLists(BuilderExtension):
             break_condition=lambda ctx: ctx.data[0] == 0
             ),
             transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]},
-            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params")
+            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params", b'\x00')
             )
         return self
 
@@ -49,7 +49,7 @@ class UntilNullLists(BuilderExtension):
             break_condition=lambda ctx: ctx.data[0] == 0
             ),
             transform=lambda data: {i["key"][0]: i["val"] for i in data["params"]},
-            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params")
+            retransform=lambda data: ([{"key": [key], "val": val} for key, val in data.items()], "params", b'\x00')
             )
         return self
 
@@ -75,6 +75,6 @@ class CountLists(BuilderExtension):
         ), 
         count=lambda ctx: ctx.decoded[until][-1],
         transform=lambda data: data["value"][0],
-        retransform=lambda data: {"len": [len(data) if data else -1], "value": [data]}
+        retransform=lambda data: {"len": [len(data) if data != None else -1], "value": [data]}
         )
         return self

@@ -1,9 +1,9 @@
 from .. import MessageBase, CheckerBuilder, ParserBuilder
-from ..checkers import TrueChecker, MSbChecker
+from ..checkers import TrueChecker, NoLenTrueChecker
 from ..extensions import UntilNullLists
 
 class StartupMessage(MessageBase):
-    checker = CheckerBuilder().addInt32(TrueChecker()).addInt32(MSbChecker(3))
+    checker = CheckerBuilder().addInt32(TrueChecker()).addInt16(3).addInt16(NoLenTrueChecker())
     parser = ParserBuilder(UntilNullLists).addKeyValuePairList("parameters")
 
 class SSLRequest(MessageBase):

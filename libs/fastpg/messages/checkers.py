@@ -18,3 +18,10 @@ class TrueChecker:
     
     def __eq__(self, value):
         return True
+
+class NoLenTrueChecker:
+    def __init__(self):
+        pass
+    
+    def __eq__(self, value):
+        return True

@@ -4,7 +4,7 @@ from typing import Callable, Any
 from abc import ABC, abstractmethod
 from types import MethodType
 
-from .checkers import TrueChecker, LSbChecker, MSbChecker
+from .checkers import TrueChecker, LSbChecker, MSbChecker, NoLenTrueChecker
 
 
 NO_VALUE = object()
@@ -41,7 +41,7 @@ class Builder(ABC):
                 setattr(self, func.__name__, MethodType(func.__func__, self))
 
     @property
-    def min_len(self):
+    def min_len(self) -> int:
         if self._total_len != None:
             return self._total_len
         t_len = 0
@@ -49,6 +49,12 @@ class Builder(ABC):
             t_len = t_len + abs(i.min_length)
         self._total_len = t_len
         return t_len
+
+    def clacRestMinLenght(self, feature: Feature) -> int:
+        lenght = int()
+        for i in range(self.features.index(feature), len(self.features)):
+            lenght = lenght + abs(self.features[i].min_length)
+        return lenght
 
     def addChar(self, name: str, **kwargs) -> "Builder":
         def _parse(ctx: CallContext) -> tuple[str, int]:
@@ -209,11 +215,15 @@ class ParserBuilder(Builder):
             #print(f"data: {data}")
             
             for sub_data in data:
+                add_data = bytes()
                 #print(f"sub_data: {sub_data}")
                 
                 if feature.retransform:
                     re_data = feature.retransform(sub_data)
                     if isinstance(re_data, tuple):
+                        if len(re_data) == 3 and re_data[2]:
+                            add_data = re_data[2]
+
                         if re_data[1] != None:
                             sub_data = {re_data[1]: re_data[0]}
                         else:
@@ -222,7 +232,8 @@ class ParserBuilder(Builder):
                         sub_data = re_data
 
                 #print(f"sub_data after retransform: {sub_data}")
-                encoded_data = feature.encode_callback(CallContext(sub_data, payload_data))[0]
+                #print(f"add_data: {add_data}")
+                encoded_data = feature.encode_callback(CallContext(sub_data, payload_data))[0] + add_data
                 #print(f"encoded_data: {encoded_data}")
                 encoded = encoded + (encoded_data if encoded_data else b'')
                 #print(f"encoded: {encoded}")
@@ -247,13 +258,28 @@ class CheckerBuilder(Builder):
     def encode(self, payload_data: dict):
         encoded = bytes()
         for feature in self.features:
-            if type(feature.name) in (TrueChecker, LSbChecker, MSbChecker):
-                data = payload_data.get("len")
+            data = bytes()
+            #print(f"feature.name: {feature.name}")
+            #print(f"feature.encode_callback: {feature.encode_callback}")
+            #print(f"payload_data: {payload_data}")
+
+            if type(feature.name) == TrueChecker:
+                data = payload_data.get("len") + (self.clacRestMinLenght(feature))
                 if data == None:
                     raise RuntimeError(f"requiered feature missing: len")
-                encoded = encoded + feature.encode_callback(CallContext(data, {}))[0]
+            elif type(feature.name) == LSbChecker:
+                data = feature.name.LSb
+            elif type(feature.name) == MSbChecker:
+                data = feature.name.MSb
+            elif type(feature.name) == NoLenTrueChecker:
+                encoded = encoded + b'\x00' * abs(feature.min_length)
+                continue
             else:
-                encoded = encoded + feature.encode_callback(CallContext(feature.name, {}))[0]
+                data = feature.name
+
+            #print(f"data: {data}")
+            encoded = encoded + feature.encode_callback(CallContext(data, {}))[0]
+            #print(f"encoded: {encoded}")
         return encoded, len(encoded)
 
     def __eq__(self, packet: bytes):
@@ -273,7 +299,7 @@ class MessageBase(ABC):
     @classmethod
     def build(cls, payload: dict):
         par_res = cls.parser.encode(payload)
-        return cls.checker.encode({"len": par_res[1] + 4})[0] + par_res[0]
+        return cls.checker.encode({"len": par_res[1]})[0] + par_res[0]
 
 class BuilderExtension(ABC):
     def __init__(self):

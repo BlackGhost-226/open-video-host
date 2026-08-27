@@ -1,6 +1,3 @@
-# TODO (important) add null bytes at ends of UntilNullLists in build
-# TODO fix incorect message legths in test byes
-
 from messages import MessageBase
 
 def test(test_bytes: bytes, message_class: MessageBase, test_biuld: dict):
@@ -42,7 +39,7 @@ if __name__ == "__main__":
     test(sasl_test, SASLInitialResponse, {'mechanism': ['SCRAM-SHA-256'], 'length': [14], 'payload': [b'n=user,r=1234']})
 
     startup_bytes = (
-            b'\x00\x00\x00)'                  # Int32 Length: 41 bytes
+            b'\x00\x00\x00\x27'                  # Int32 Length: 41 bytes
             b'\x00\x03\x00\x00'              # Int32 Protocol Version: 3.0 (196608)
             b'user\x00postgres\x00'          # Key: 'user', Value: 'postgres'
             b'database\x00app_db\x00'        # Key: 'database', Value: 'app_db'
@@ -79,7 +76,7 @@ if __name__ == "__main__":
     test(copy_in_bytes, CopyInResponse, {'overall_format': [0], 'column_num': [2], 'column_formats': [0, 0]})
 
     data_row_bytes = (
-            b'D\x00\x00\x00\x17'     # Tag 'D', Int32 Length: 23
+            b'D\x00\x00\x00\x13'     # Tag 'D', Int32 Length: 23
             b'\x00\x02'             # Int16 Column Count: 2
             # Column 1: 'hello' (length 5)
             b'\x00\x00\x00\x05'     # Int32 Col 1 Length: 5
@@ -90,7 +87,7 @@ if __name__ == "__main__":
     test(data_row_bytes, DataRow, {'num_column_values': [2], 'values': [b'hello', None]})
 
     negotiate_bytes = (
-            b'v\x00\x00\x00\x1f'     # Tag 'v', Int32 Length: 31
+            b'v\x00\x00\x00\x1e'     # Tag 'v', Int32 Length: 31
             b'\x00\x00\x00\x00'     # Int32 Supported Minor Version: 0
             b'\x00\x00\x00\x02'             # Int32 Option Count: 2
             b'option_a\x00'         # Option string 1 + null byte
@@ -149,7 +146,7 @@ if __name__ == "__main__":
 
     bind_bytes = (
         b'B'                                  # Tag: 'B' (Bind)
-        b'\x00\x00\x00\x31'                  # Length: 49 bytes (including self)
+        b'\x00\x00\x00\x39'                  # Length: 49 bytes (including self)
         b'my_portal\x00'                     # Portal name (String)
         b'my_statement\x00'                  # PreparedStatement name (String)
 
@@ -180,7 +177,7 @@ if __name__ == "__main__":
 
     function_call_bytes = (
         b'F'                                  # Tag: 'F' (FunctionCall)
-        b'\x00\x00\x00\x23'                  # Length: 35 bytes (excluding tag)
+        b'\x00\x00\x00\x1c'                  # Length: 35 bytes (excluding tag)
         b'\x00\x00\x07\xe2'                  # Function OID: 2018
 
         # --- Argument Format Codes ---
@@ -204,7 +201,7 @@ if __name__ == "__main__":
 
     parse_bytes = (
         b'P'                                  # Tag: 'P' (Parse)
-        b'\x00\x00\x00\x38'                  # Length: 56 bytes (excluding tag)
+        b'\x00\x00\x00\x45'                  # Length: 56 bytes (excluding tag)
         b'stmt_1\x00'                        # Statement name: "stmt_1\x00"
         b'SELECT * FROM users WHERE id = $1 AND role = $2\x00'  # Query string
 
