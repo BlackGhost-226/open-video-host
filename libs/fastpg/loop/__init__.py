@@ -70,8 +70,11 @@ async def loop(
     frontend_sig = signature(frontend_callback)
     backend_sig = signature(backend_callback)
 
+    global_ctx = Ctx()
     frontend_ctx = Ctx()
     backend_ctx = Ctx()
+    frontend_ctx.g = global_ctx
+    backend_ctx.g = global_ctx
 
     while True:
         done, _ = await asyncio.wait(

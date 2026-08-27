@@ -119,7 +119,7 @@ class Server:
 
         #app_task = asyncio.create_task(self.app(scope, receive, send))
 
-        async def cli_han(backend_writer: StreamWriter, front_packet: bytes):
+        async def cli_han(backend_writer: StreamWriter, front_packet: bytes, ctx: Ctx):
             if state_machine.state == State.Idle:
                 
                 if Query.matches(front_packet):
@@ -131,6 +131,7 @@ class Server:
     
             if state_machine.state == State.SimpleQuery:
                 mess_print(allFrontendMessages, front_packet, "F")
+                #ctx.g.query = Query.parse(front_packet)["query"] # test of ctx.g
 
                 backend_writer.write(front_packet)
                 await backend_writer.drain()
@@ -160,6 +161,7 @@ class Server:
                 
                 elif RowDescription.matches(back_packet):
                     ctx.last_rowDesc = RowDescription.parse(back_packet)
+                    #print(ctx.g.query) # test of ctx.g
                 elif DataRow.matches(back_packet):
                     row_dict = {
                         field["field_name"][0]: value 
