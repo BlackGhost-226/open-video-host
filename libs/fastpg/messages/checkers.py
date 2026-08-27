@@ -12,14 +12,14 @@ class LSbChecker:
     def __eq__(self, code: int):
         return self.LSb == code & 0xFFFF
 
-class TrueChecker:
+class Lenght:
     def __init__(self):
         pass
     
     def __eq__(self, value):
         return True
 
-class NoLenTrueChecker:
+class TrueChecker:
     def __init__(self):
         pass
     

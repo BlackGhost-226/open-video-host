@@ -1,10 +1,9 @@
 from ... import CheckerBuilder, ParserBuilder, MessageBase
-from ...checkers import TrueChecker
-from ...extensions import UntilNullLists
+from ...checkers import Lenght
 
 
 class BackendKeyData(MessageBase):
-    checker = CheckerBuilder().addChar("K").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("K").addInt32(Lenght())
     parser = ParserBuilder().addInt32("process_id").addByte("secret_key")
 
 class CloseComplete(MessageBase):
@@ -12,11 +11,11 @@ class CloseComplete(MessageBase):
     parser = ParserBuilder()
 
 class CommandComplete(MessageBase):
-    checker = CheckerBuilder().addChar("C").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("C").addInt32(Lenght())
     parser = ParserBuilder().addString("command_tag")
 
 class FunctionCallResponse(MessageBase):
-    checker = CheckerBuilder().addChar("V").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("V").addInt32(Lenght())
     parser = ParserBuilder().addInt32("len", unsigned=False).addByte("result_value", length=lambda ctx: ctx.decoded["len"][-1], condition=lambda ctx: ctx.decoded["len"][-1] != -1, default=None)
 
 class NoData(MessageBase):
@@ -24,11 +23,11 @@ class NoData(MessageBase):
     parser = ParserBuilder()
 
 class ParameterDescription(MessageBase):
-    checker = CheckerBuilder().addChar("t").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("t").addInt32(Lenght())
     parser = ParserBuilder().addInt16("parameter_num").addInt32("object_ids", count=lambda ctx: ctx.decoded["parameter_num"][-1])
 
 class ParameterStatus(MessageBase):
-    checker = CheckerBuilder().addChar("S").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("S").addInt32(Lenght())
     parser = ParserBuilder().addString("run_time_param").addString("param_value")
 
 class PortalSuspended(MessageBase):

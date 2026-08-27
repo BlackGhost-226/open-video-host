@@ -4,7 +4,7 @@ from typing import Callable, Any
 from abc import ABC, abstractmethod
 from types import MethodType
 
-from .checkers import TrueChecker, LSbChecker, MSbChecker, NoLenTrueChecker
+from .checkers import Lenght, LSbChecker, MSbChecker, TrueChecker
 
 
 NO_VALUE = object()
@@ -263,7 +263,7 @@ class CheckerBuilder(Builder):
             #print(f"feature.encode_callback: {feature.encode_callback}")
             #print(f"payload_data: {payload_data}")
 
-            if type(feature.name) == TrueChecker:
+            if type(feature.name) == Lenght:
                 data = payload_data.get("len") + (self.clacRestMinLenght(feature))
                 if data == None:
                     raise RuntimeError(f"requiered feature missing: len")
@@ -271,7 +271,7 @@ class CheckerBuilder(Builder):
                 data = feature.name.LSb
             elif type(feature.name) == MSbChecker:
                 data = feature.name.MSb
-            elif type(feature.name) == NoLenTrueChecker:
+            elif type(feature.name) == TrueChecker:
                 encoded = encoded + b'\x00' * abs(feature.min_length)
                 continue
             else:

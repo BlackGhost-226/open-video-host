@@ -1,14 +1,14 @@
 from ... import CheckerBuilder, ParserBuilder, MessageBase
-from ...checkers import TrueChecker
+from ...checkers import Lenght
 from ...extensions import CountLists
 
 
 class Close(MessageBase):
-    checker = CheckerBuilder().addChar("C").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("C").addInt32(Lenght())
     parser = ParserBuilder().addChar("S_or_P").addString("name_of_prepared")
 
 class CopyFail(MessageBase):
-    checker = CheckerBuilder().addChar("f").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("f").addInt32(Lenght())
     parser = ParserBuilder().addString("error_message")
 
 class Flush(MessageBase):
@@ -16,7 +16,7 @@ class Flush(MessageBase):
     parser = ParserBuilder()
 
 class FunctionCall(MessageBase):
-    checker = CheckerBuilder().addChar("F").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("F").addInt32(Lenght())
     parser = (ParserBuilder()
               .addInt32("OID")
               .addSequence("format_codes", ParserBuilder()
@@ -35,7 +35,7 @@ class FunctionCall(MessageBase):
               )
 
 class Query(MessageBase):
-    checker = CheckerBuilder().addChar("Q").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("Q").addInt32(Lenght())
     parser = ParserBuilder().addString("query")
 
 class Terminate(MessageBase):

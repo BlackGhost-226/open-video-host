@@ -1,9 +1,9 @@
 from .. import MessageBase, CheckerBuilder, ParserBuilder
-from ..checkers import TrueChecker, NoLenTrueChecker
+from ..checkers import Lenght, TrueChecker
 from ..extensions import UntilNullLists
 
 class StartupMessage(MessageBase):
-    checker = CheckerBuilder().addInt32(TrueChecker()).addInt16(3).addInt16(NoLenTrueChecker())
+    checker = CheckerBuilder().addInt32(Lenght()).addInt16(3).addInt16(TrueChecker())
     parser = ParserBuilder(UntilNullLists).addKeyValuePairList("parameters")
 
 class SSLRequest(MessageBase):
@@ -15,5 +15,5 @@ class GSSENCRequest(MessageBase):
     parser = ParserBuilder()
 
 class CancelRequest(MessageBase):
-    checker = CheckerBuilder().addInt32(TrueChecker()).addInt32(80877102)
+    checker = CheckerBuilder().addInt32(Lenght()).addInt32(80877102)
     parser = ParserBuilder().addInt32("process_id").addInt32("secret_key")

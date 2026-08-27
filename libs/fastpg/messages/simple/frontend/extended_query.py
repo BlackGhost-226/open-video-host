@@ -1,10 +1,10 @@
 from ... import CheckerBuilder, ParserBuilder, MessageBase
-from ...checkers import TrueChecker
+from ...checkers import Lenght
 from ...extensions import CountLists
 
 
 class Parse(MessageBase):
-    checker = CheckerBuilder().addChar("P").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("P").addInt32(Lenght())
     parser = ParserBuilder().addString("statement").addString("query").addSequence(
         "OID_param_types", ParserBuilder()
         .addInt16("num")
@@ -14,7 +14,7 @@ class Parse(MessageBase):
         )
 
 class Bind(MessageBase):
-    checker = CheckerBuilder().addChar("B").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("B").addInt32(Lenght())
     parser = (ParserBuilder()
               .addString("destination_portal")
               .addString("prepared_statement")
@@ -40,11 +40,11 @@ class Bind(MessageBase):
               )
 
 class Describe(MessageBase):
-    checker = CheckerBuilder().addChar("D").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("D").addInt32(Lenght())
     parser = ParserBuilder().addChar("S_or_P").addString("name_of_prepared")
 
 class Execute(MessageBase):
-    checker = CheckerBuilder().addChar("E").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("E").addInt32(Lenght())
     parser = ParserBuilder().addString("portal_to_execute").addInt32("max_return_row_num")
 
 class Sync(MessageBase):

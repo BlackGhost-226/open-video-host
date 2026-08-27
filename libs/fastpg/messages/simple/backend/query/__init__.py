@@ -1,10 +1,10 @@
 from .... import CheckerBuilder, ParserBuilder, MessageBase
-from ....checkers import TrueChecker
+from ....checkers import Lenght
 from ....extensions import CountLists
 
 
 class RowDescription(MessageBase):
-    checker = CheckerBuilder().addChar("T").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("T").addInt32(Lenght())
     parser = ParserBuilder().addInt16("field_num").addSequence(
         "fields", 
         ParserBuilder().addString("field_name")
@@ -18,7 +18,7 @@ class RowDescription(MessageBase):
         )
     
 class DataRow(MessageBase):
-    checker = CheckerBuilder().addChar("D").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("D").addInt32(Lenght())
     parser = ParserBuilder(CountLists).addInt16("num_column_values").addIntByteList("values", "num_column_values")
 
 class EmptyQueryResponse(MessageBase):

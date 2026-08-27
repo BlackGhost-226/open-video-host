@@ -1,5 +1,5 @@
 from ... import CheckerBuilder, ParserBuilder, MessageBase
-from ...checkers import TrueChecker
+from ...checkers import Lenght
 from ...extensions import UntilNullLists, CountLists
 
 
@@ -24,7 +24,7 @@ class AuthenticationGSS(MessageBase):
     parser = ParserBuilder()
 
 class AuthenticationGSSContinue(MessageBase):
-    checker = CheckerBuilder().addChar("R").addInt32(TrueChecker()).addInt32(8)
+    checker = CheckerBuilder().addChar("R").addInt32(Lenght()).addInt32(8)
     parser = ParserBuilder().addByte("auth_data")
 
 class AuthenticationSSPI(MessageBase):
@@ -32,17 +32,17 @@ class AuthenticationSSPI(MessageBase):
     parser = ParserBuilder()
 
 class AuthenticationSASL(MessageBase):
-    checker = CheckerBuilder().addChar("R").addInt32(TrueChecker()).addInt32(10)
+    checker = CheckerBuilder().addChar("R").addInt32(Lenght()).addInt32(10)
     parser = ParserBuilder(UntilNullLists).addStringList("mechanisms")
 
 class AuthenticationSASLContinue(MessageBase):
-    checker = CheckerBuilder().addChar("R").addInt32(TrueChecker()).addInt32(11)
+    checker = CheckerBuilder().addChar("R").addInt32(Lenght()).addInt32(11)
     parser = ParserBuilder().addByte("sasl_data")
 
 class AuthenticationSASLFinal(MessageBase):
-    checker = CheckerBuilder().addChar("R").addInt32(TrueChecker()).addInt32(12)
+    checker = CheckerBuilder().addChar("R").addInt32(Lenght()).addInt32(12)
     parser = ParserBuilder().addByte("sasl_outcome")
 
 class NegotiateProtocolVersion(MessageBase):
-    checker = CheckerBuilder().addChar("v").addInt32(TrueChecker())
+    checker = CheckerBuilder().addChar("v").addInt32(Lenght())
     parser = ParserBuilder(CountLists).addInt32("minor_version").addInt32("num_unrecognized_options").addStringList("unrecognized_options", "num_unrecognized_options")
