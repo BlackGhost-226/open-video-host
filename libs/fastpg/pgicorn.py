@@ -23,6 +23,9 @@ from state_machine.events import Event
 from loop import loop, Ctx, Signal
 from loop.startup import handle_startup
 
+from driver.connection import Connection
+import driver.type_objects as to
+
 
 def build_postgres_error(message: str, code: str = "42501") -> bytes:
     fields = [
@@ -51,6 +54,8 @@ class Server:
 
     def run(self):
         #uvloop.install()
+        Connection(f"postgresql://root:test@{self.db_host}:{self.db_port}/test").close() # to generate array_map in driver.type_objects
+        #print(to.array_map)
 
         async def _main():
             server = await asyncio.start_server(
