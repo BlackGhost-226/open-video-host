@@ -167,9 +167,8 @@ class Server:
                         for field, value in zip(ctx.last_rowDesc["fields"], DataRow.parse(back_packet)["values"])
                     }
                     print(f"(B) Data: {row_dict}")
-                elif CommandComplete.matches(back_packet):
-                    del ctx.last_rowDesc
-                    #pass
+                #elif CommandComplete.matches(back_packet):
+                #    del ctx.last_rowDesc
 
                 client_writer.write(back_packet)
                 await client_writer.drain()
