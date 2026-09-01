@@ -1,3 +1,5 @@
+# https://www.postgresql.org/docs/current/protocol-flow.html
+
 import asyncio
 from asyncio import StreamReader
 from asyncio import StreamWriter
@@ -12,7 +14,6 @@ from messages.simple.frontend.extended_query import Parse, Sync
 from messages.simple.backend import ReadyForQuery, CommandComplete
 from messages.simple.backend import allMessages as allBackendMessages
 from messages.simple.backend.query import RowDescription, DataRow
-from messages.simple.backend.auth import AuthenticationOk
 
 from state_machine import StateMachine
 from state_machine.transitions import transitions
@@ -86,7 +87,7 @@ class Server:
         async def back_han(client_writer: StreamWriter, back_packet: bytes):
             client_writer.write(back_packet)
             await client_writer.drain()
-            if AuthenticationOk.matches(back_packet):
+            if ReadyForQuery.matches(back_packet): # After having received AuthenticationOk, the frontend must wait for ... ReadyForQuery.
                 return Signal._break
 
         async def cli_han(backend_writer: StreamWriter, front_packet: bytes):
@@ -131,7 +132,6 @@ class Server:
     
             if state_machine.state == State.SimpleQuery:
                 mess_print(allFrontendMessages, front_packet, "F")
-                #ctx.g.query = Query.parse(front_packet)["query"] # test of ctx.g
 
                 backend_writer.write(front_packet)
                 await backend_writer.drain()
@@ -161,7 +161,6 @@ class Server:
                 
                 elif RowDescription.matches(back_packet):
                     ctx.last_rowDesc = RowDescription.parse(back_packet)
-                    #print(ctx.g.query) # test of ctx.g
                 elif DataRow.matches(back_packet):
                     row_dict = {
                         field["field_name"][0]: value 
@@ -170,6 +169,7 @@ class Server:
                     print(f"(B) Data: {row_dict}")
                 elif CommandComplete.matches(back_packet):
                     del ctx.last_rowDesc
+                    #pass
 
                 client_writer.write(back_packet)
                 await client_writer.drain()

@@ -35,8 +35,8 @@ if __name__ == "__main__":
     query_test = b'Q\x00\x00\x00\x0eSELECT 1;\x00'
     test(query_test, Query, {'query': ['SELECT 1;']})
 
-    sasl_test = b'p\x00\x00\x00#SCRAM-SHA-256\x00\x00\x00\x00\x0en=user,r=1234'
-    test(sasl_test, SASLInitialResponse, {'mechanism': ['SCRAM-SHA-256'], 'length': [14], 'payload': [b'n=user,r=1234']})
+    sasl_test = b'p\x00\x00\x00#SCRAM-SHA-256\x00\x00\x00\x00\x0dn=user,r=1234'
+    test(sasl_test, SASLInitialResponse, {'mechanism': ['SCRAM-SHA-256'], 'payload': [b'n=user,r=1234']})
 
     startup_bytes = (
             b'\x00\x00\x00\x27'                  # Int32 Length: 41 bytes

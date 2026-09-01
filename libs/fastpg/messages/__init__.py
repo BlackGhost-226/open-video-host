@@ -1,3 +1,5 @@
+# https://www.postgresql.org/docs/current/protocol-message-formats.html#PROTOCOL-MESSAGE-FORMATS-NOTICERESPONSE
+
 import struct
 from dataclasses import dataclass
 from typing import Callable, Any
@@ -150,6 +152,8 @@ class Builder(ABC):
 
         def _encode(ctx: CallContext):
             data = ctx.data
+            if not isinstance(data, bytes) and data is not None:
+                raise TypeError(f"Got {type(data).__name__} instead of bytes or None")
             return data if data else b'', len(data) if data else -1
         
         self.features.append(Feature(-1, name, _parse, _encode, **kwargs))
