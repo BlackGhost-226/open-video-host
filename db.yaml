@@ -27,6 +27,6 @@ services:
       SERVER_db: postgresql_db
       PORT_db: "5432"
       USER_db: root
-      PASSWORD_db: test
-      DATABASE_db: test
+      PASSWORD_db: abc123
+      DATABASE_db: root
     

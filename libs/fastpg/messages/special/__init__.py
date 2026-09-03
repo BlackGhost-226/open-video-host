@@ -7,11 +7,11 @@ class StartupMessage(MessageBase):
     parser = ParserBuilder(UntilNullLists).addKeyValuePairList("parameters")
 
 class SSLRequest(MessageBase):
-    checker = CheckerBuilder().addInt32(8).addInt32(80877106)
+    checker = CheckerBuilder().addInt32(8).addInt32(80877103)
     parser = ParserBuilder()
 
 class GSSENCRequest(MessageBase):
-    checker = CheckerBuilder().addInt32(8).addInt32(80877107)
+    checker = CheckerBuilder().addInt32(8).addInt32(80877104)
     parser = ParserBuilder()
 
 class CancelRequest(MessageBase):

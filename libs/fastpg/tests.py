@@ -30,7 +30,10 @@ if __name__ == "__main__":
     from messages.simple.backend.query import DataRow
     from messages.simple.backend.info import ErrorResponse
     
-    from messages.special import StartupMessage, CancelRequest
+    from messages.special import StartupMessage, CancelRequest, SSLRequest
+
+    ssl_bytes = b'\x00\x00\x00\x08\x04\xd2\x16\x2f'
+    test(ssl_bytes, SSLRequest, {})
     
     query_test = b'Q\x00\x00\x00\x0eSELECT 1;\x00'
     test(query_test, Query, {'query': ['SELECT 1;']})

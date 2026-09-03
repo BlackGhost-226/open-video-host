@@ -14,6 +14,7 @@ from messages.simple.frontend.extended_query import Parse, Sync
 from messages.simple.backend import ReadyForQuery, CommandComplete
 from messages.simple.backend import allMessages as allBackendMessages
 from messages.simple.backend.query import RowDescription, DataRow
+from messages.simple.backend.auth import AuthenticationOk
 
 from state_machine import StateMachine
 from state_machine.transitions import transitions
@@ -80,6 +81,9 @@ class Server:
     async def _handle_connection(self, client_reader: StreamReader, client_writer: StreamWriter):
         state_machine = StateMachine(State.Startup, transitions)
 
+        rw = await self.pooler.get()
+        backend_reader, backend_writer = (rw.reader, rw.writer)
+
         startup_packet = await handle_startup(client_reader, client_writer)
         params = StartupMessage.parse(startup_packet)["parameters"][0]
         print(params)
@@ -93,21 +97,22 @@ class Server:
         #    await client_writer.drain()
         #    client_writer.close()
         #    return
-        rw = await self.pooler.get()
-        backend_reader, backend_writer = (rw.reader, rw.writer)
 
         # TODO client auth
-        async def back_han(client_writer: StreamWriter, back_packet: bytes):
-            client_writer.write(back_packet)
-            await client_writer.drain()
-            if ReadyForQuery.matches(back_packet): # After having received AuthenticationOk, the frontend must wait for ... ReadyForQuery.
-                return Signal._break
+        client_writer.write(AuthenticationOk.build({}))
+        client_writer.write(ReadyForQuery.build({"transaction_status": "I"}))
+        await client_writer.drain()
+        #async def back_han(client_writer: StreamWriter, back_packet: bytes):
+        #    client_writer.write(back_packet)
+        #    await client_writer.drain()
+        #    if ReadyForQuery.matches(back_packet): # After having received AuthenticationOk, the frontend must wait for ... ReadyForQuery.
+        #        return Signal._break
 
-        async def cli_han(backend_writer: StreamWriter, front_packet: bytes):
-            backend_writer.write(front_packet)
-            await backend_writer.drain()
+        #async def cli_han(backend_writer: StreamWriter, front_packet: bytes):
+        #    backend_writer.write(front_packet)
+        #    await backend_writer.drain()
 
-        await loop(client_reader, client_writer, cli_han, backend_reader, backend_writer, back_han)
+        #await loop(client_reader, client_writer, cli_han, backend_reader, backend_writer, back_han)
 
         state_machine.transition(Event.StartupComplete)
 
@@ -196,7 +201,7 @@ class Server:
     
         client_writer.close()
         #backend_writer.close()
-        self.pooler.put(rw)
+        await self.pooler.put(rw)
 
 if __name__ == "__main__":
     #server = Server(app_obj=None, host="0.0.0.0", port=8080, db_host="postgresql_db", db_port=5432)
