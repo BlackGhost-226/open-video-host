@@ -4,12 +4,12 @@ services:
     restart: always
     environment:
       POSTGRES_USER: root
-      POSTGRES_PASSWORD: test
-      POSTGRES_DB: test
+      POSTGRES_PASSWORD: abc123
+      POSTGRES_DB: root
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d test"]
+      test: ["CMD-SHELL", "pg_isready -U root"]
       interval: 15s
       timeout: 15s
       retries: 3

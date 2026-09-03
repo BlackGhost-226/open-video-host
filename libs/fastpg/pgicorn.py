@@ -26,6 +26,8 @@ from loop.startup import handle_startup
 from driver.connection import Connection
 import driver.type_objects as to
 
+from pool import Pool, ConnectionOptions
+
 
 def build_postgres_error(message: str, code: str = "42501") -> bytes:
     fields = [
@@ -52,12 +54,16 @@ class Server:
         self.db_host = db_host
         self.db_port = db_port
 
+        self.pooler: Pool = None
+
     def run(self):
         #uvloop.install()
-        Connection(f"postgresql://root:test@{self.db_host}:{self.db_port}/test").close() # to generate array_map in driver.type_objects
+        Connection(f"postgresql://root:abc123@{self.db_host}:{self.db_port}/root").close() # to generate array_map in driver.type_objects
         #print(to.array_map)
+        self.pooler = Pool(ConnectionOptions(self.db_host, self.db_port, lambda: ("root", "abc123")))
 
         async def _main():
+            await self.pooler.start()
             server = await asyncio.start_server(
                 lambda r, w: self._handle_connection(r, w), 
                 self.host, 
@@ -78,17 +84,19 @@ class Server:
         params = StartupMessage.parse(startup_packet)["parameters"][0]
         print(params)
 
-        try:
-            backend_reader, backend_writer = await asyncio.open_connection(self.db_host, self.db_port)
-            backend_writer.write(startup_packet)
-            await backend_writer.drain()
-        except Exception as e:
-            client_writer.write(build_postgres_error("Database backend unreachable."))
-            await client_writer.drain()
-            client_writer.close()
-            return
+        #try:
+        #    backend_reader, backend_writer = await asyncio.open_connection(self.db_host, self.db_port)
+        #    backend_writer.write(startup_packet)
+        #    await backend_writer.drain()
+        #except Exception as e:
+        #    client_writer.write(build_postgres_error("Database backend unreachable."))
+        #    await client_writer.drain()
+        #    client_writer.close()
+        #    return
+        rw = await self.pooler.get()
+        backend_reader, backend_writer = (rw.reader, rw.writer)
 
-        
+        # TODO client auth
         async def back_han(client_writer: StreamWriter, back_packet: bytes):
             client_writer.write(back_packet)
             await client_writer.drain()
@@ -187,7 +195,8 @@ class Server:
         await loop(client_reader, client_writer, cli_han, backend_reader, backend_writer, back_han)
     
         client_writer.close()
-        backend_writer.close()
+        #backend_writer.close()
+        self.pooler.put(rw)
 
 if __name__ == "__main__":
     #server = Server(app_obj=None, host="0.0.0.0", port=8080, db_host="postgresql_db", db_port=5432)

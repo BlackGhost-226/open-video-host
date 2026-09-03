@@ -31,12 +31,12 @@ services:
     restart: always
     environment:
       POSTGRES_USER: root
-      POSTGRES_PASSWORD: test
-      POSTGRES_DB: test
+      POSTGRES_PASSWORD: abc123
+      POSTGRES_DB: root
     volumes:
       - ./data/postgresql:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d test"]
+      test: ["CMD-SHELL", "pg_isready -U root"]
       interval: 15s
       timeout: 15s
       retries: 3
@@ -110,7 +110,7 @@ services:
       dockerfile: services/data_gateway/Dockerfile
     environment:
       S3_URI: minio://minio:minio123@minio:9000/
-      DATABASE_URI: postgresql://root:test@postgresql_db:5432/test
+      DATABASE_URI: postgresql://root:abc123@postgresql_db:5432/root
       #VECTOR_URI: mongodb://mongoadmin:bdung@mongo:27017/?retryWrites=true&w=majority
       #VECTOR_DB_NAME: test
     ports:
