@@ -50,13 +50,13 @@ class Pool:
     async def _monitor_levels(self):
         async with self._lock:
             should_buffer = (
-                len(self._buffer) < self._min
+                len(self._buf) < self._min
                 and not self._closing
                 and self._fill_task is None
             )
 
         if should_buffer:
-            create_task(self.buffer(fill_to_min=True))
+            create_task(self._buffer(fill_to_min=True))
 
     async def _buffer(self, fill_to_min: bool = False):
         async with self._lock:
@@ -121,7 +121,7 @@ class Pool:
         await writer.wait_closed()
 
     async def _check_connection(self, resource: Resource):
-        pass
+        return True
 
     async def _reset_connection(self, resource: Resource):
         pass
@@ -147,7 +147,9 @@ class Pool:
         if self.closed:
             raise Warning("The connection pool is closed")
 
-        return await self._buf.get()
+        resource = await self._buf.get()
+        await self._monitor_levels()
+        return resource
 
     async def put(self, resource: Resource):
         if self.closed:
