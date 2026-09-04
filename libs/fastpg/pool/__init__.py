@@ -154,7 +154,7 @@ class Pool:
     async def put(self, resource: Resource):
         if self.closed:
             await self._disconnect(resource)
-            # raise Warning("The connection pool is closed")
+            return
 
         async with self._lock:
             if any(resource is existing for existing in self._buf):
