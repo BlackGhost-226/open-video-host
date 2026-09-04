@@ -8,25 +8,24 @@ async def handle_cancel(id, key):
     pass
 
 async def handle_startup(client_reader: StreamReader, client_writer: StreamWriter):
-    startup_packet = None
     ssl_negotiated = False
     gssenc_negotiated = False
     while True:
         try:
             startup_packet = await read_special_packet(client_reader)
             if StartupMessage.matches(startup_packet):
-                break
+                return StartupMessage.parse(startup_packet)["parameters"][0]
 
             elif SSLRequest.matches(startup_packet):
                 if ssl_negotiated:
-                    raise ConnectionError("Client sent duplicate SSLRequest")
+                    return None
                 client_writer.write(b'N')
                 await client_writer.drain()
                 ssl_negotiated = True
 
             elif GSSENCRequest.matches(startup_packet):
                 if gssenc_negotiated:
-                    raise ConnectionError("Client sent duplicate GSSENCRequest")
+                    return None
                 client_writer.write(b'N')
                 await client_writer.drain()
                 gssenc_negotiated = True
@@ -41,4 +40,3 @@ async def handle_startup(client_reader: StreamReader, client_writer: StreamWrite
             client_writer.close()
             return
         
-    return startup_packet

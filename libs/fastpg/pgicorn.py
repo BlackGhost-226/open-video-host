@@ -5,8 +5,6 @@ from asyncio import StreamReader
 from asyncio import StreamWriter
 import struct
 
-from messages.special import StartupMessage
-
 from messages.simple.frontend import Query
 from messages.simple.frontend import allMessages as allFrontendMessages
 from messages.simple.frontend.extended_query import Parse, Sync
@@ -14,7 +12,6 @@ from messages.simple.frontend.extended_query import Parse, Sync
 from messages.simple.backend import ReadyForQuery, CommandComplete
 from messages.simple.backend import allMessages as allBackendMessages
 from messages.simple.backend.query import RowDescription, DataRow
-from messages.simple.backend.auth import AuthenticationOk
 
 from state_machine import StateMachine
 from state_machine.transitions import transitions
@@ -23,6 +20,7 @@ from state_machine.events import Event
 
 from loop import loop, Ctx, Signal
 from loop.startup import handle_startup
+from loop.auth import handle_authentication
 
 from driver.connection import Connection
 import driver.type_objects as to
@@ -61,7 +59,7 @@ class Server:
         #uvloop.install()
         Connection(f"postgresql://root:abc123@{self.db_host}:{self.db_port}/root").close() # to generate array_map in driver.type_objects
         #print(to.array_map)
-        self.pooler = Pool(ConnectionOptions(self.db_host, self.db_port, lambda: ("root", "abc13")))
+        self.pooler = Pool(ConnectionOptions(self.db_host, self.db_port, lambda: ("root", "abc123")))
 
         async def _main():
             await self.pooler.start()
@@ -81,38 +79,22 @@ class Server:
     async def _handle_connection(self, client_reader: StreamReader, client_writer: StreamWriter):
         state_machine = StateMachine(State.Startup, transitions)
 
-        rw = await self.pooler.get()
-        backend_reader, backend_writer = (rw.reader, rw.writer)
-
-        startup_packet = await handle_startup(client_reader, client_writer)
-        params = StartupMessage.parse(startup_packet)["parameters"][0]
+        params = await handle_startup(client_reader, client_writer)
+        if params is None:
+            client_writer.close()
+            await client_writer.wait_closed()
+            return
         print(params)
 
-        #try:
-        #    backend_reader, backend_writer = await asyncio.open_connection(self.db_host, self.db_port)
-        #    backend_writer.write(startup_packet)
-        #    await backend_writer.drain()
-        #except Exception as e:
-        #    client_writer.write(build_postgres_error("Database backend unreachable."))
-        #    await client_writer.drain()
-        #    client_writer.close()
-        #    return
+        auth = await handle_authentication(client_reader, client_writer, lambda d: d)
+        if auth is None:
+            client_writer.close()
+            await client_writer.wait_closed()
+            return
+        print(auth)
 
-        # TODO client auth
-        client_writer.write(AuthenticationOk.build({}))
-        client_writer.write(ReadyForQuery.build({"transaction_status": "I"}))
-        await client_writer.drain()
-        #async def back_han(client_writer: StreamWriter, back_packet: bytes):
-        #    client_writer.write(back_packet)
-        #    await client_writer.drain()
-        #    if ReadyForQuery.matches(back_packet): # After having received AuthenticationOk, the frontend must wait for ... ReadyForQuery.
-        #        return Signal._break
-
-        #async def cli_han(backend_writer: StreamWriter, front_packet: bytes):
-        #    backend_writer.write(front_packet)
-        #    await backend_writer.drain()
-
-        #await loop(client_reader, client_writer, cli_han, backend_reader, backend_writer, back_han)
+        rw = await self.pooler.get()
+        backend_reader, backend_writer = (rw.reader, rw.writer)
 
         state_machine.transition(Event.StartupComplete)
 
@@ -198,10 +180,10 @@ class Server:
                     state_machine.transition(Event.ReadyForQuery)
 
         await loop(client_reader, client_writer, cli_han, backend_reader, backend_writer, back_han)
-    
-        client_writer.close()
-        #backend_writer.close()
+
         await self.pooler.put(rw)
+        client_writer.close()
+        await client_writer.wait_closed()
 
 if __name__ == "__main__":
     #server = Server(app_obj=None, host="0.0.0.0", port=8080, db_host="postgresql_db", db_port=5432)

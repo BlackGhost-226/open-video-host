@@ -19,7 +19,7 @@ async def wait(reader: StreamReader, error_text: str):
         else:
             if ReadyForQuery.matches(packet):
                 break
-            catch_error(packet, error_text, ProgrammingError)
+            catch_error(packet, error_text)
 
 def catch_error(packet: bytes, error_text: str):
     if ErrorResponse.matches(packet):
