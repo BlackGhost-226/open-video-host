@@ -61,7 +61,7 @@ class Server:
         #uvloop.install()
         Connection(f"postgresql://root:abc123@{self.db_host}:{self.db_port}/root").close() # to generate array_map in driver.type_objects
         #print(to.array_map)
-        self.pooler = Pool(ConnectionOptions(self.db_host, self.db_port, lambda: ("root", "abc123")))
+        self.pooler = Pool(ConnectionOptions(self.db_host, self.db_port, lambda: ("root", "abc13")))
 
         async def _main():
             await self.pooler.start()

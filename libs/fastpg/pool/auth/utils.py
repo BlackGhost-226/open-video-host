@@ -19,8 +19,11 @@ async def wait(reader: StreamReader, error_text: str):
         else:
             if ReadyForQuery.matches(packet):
                 break
-            elif ErrorResponse.matches(packet):
-                raise ProgrammingError(f"The DataBase reponded with an ErrorResponse while {error_text}: {ErrorResponse.parse(packet)["errors"]}")
+            catch_error(packet, error_text, ProgrammingError)
+
+def catch_error(packet: bytes, error_text: str):
+    if ErrorResponse.matches(packet):
+        raise ProgrammingError(f"The DataBase reponded with an ErrorResponse while {error_text}: {ErrorResponse.parse(packet)["errors"]}")
 
 def xor(bytes1, bytes2):
     if len(bytes1) != len(bytes2):

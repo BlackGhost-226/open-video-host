@@ -3,7 +3,7 @@ from messages.simple.backend.auth import AuthenticationOk, AuthenticationSASLCon
 from messages.simple.frontend.auth import PasswordMessage, SASLInitialResponse, SASLResponse
 
 from ..errors import InterfaceError
-from .utils import saslprep, xor, wait
+from .utils import saslprep, xor, wait, catch_error
 
 from asyncio import StreamReader, StreamWriter
 
@@ -20,6 +20,7 @@ async def clear_text(reader: StreamReader, writer: StreamWriter, passwd: str, in
         pkt = await read_simple_packet(reader)
         if AuthenticationOk.matches(pkt):
             break
+        catch_error(pkt, "clear text authentication exchange")
     await wait(reader, "clear text authentication")
     return True
 
@@ -84,6 +85,7 @@ async def sasl(reader: StreamReader, writer: StreamWriter, passwd: str, init_pkt
             received_sig = base64.b64decode(params["v"])
             if not hmac.compare_digest(received_sig, server_signature):
                 raise InterfaceError("SCRAM server signature verification failed")
+        catch_error(pkt, "sasl authentication exchange")
             
     await wait(reader, "sasl authentication")
     return True
