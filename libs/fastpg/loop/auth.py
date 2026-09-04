@@ -9,7 +9,7 @@ from asyncio import StreamWriter
 from typing import Callable
 
 
-async def handle_authentication(client_reader: StreamReader, client_writer: StreamWriter, token_callback: Callable):
+async def handle_authentication(client_reader: StreamReader, client_writer: StreamWriter, token_callback: Callable[[str], dict[str, str]]):
     # Curently unsupported by most python adapters:
     # https://www.postgresql.org/docs/current/sasl-authentication.html#SASL-OAUTHBEARER
     # https://datatracker.ietf.org/doc/html/rfc7628
